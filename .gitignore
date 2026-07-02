@@ -36,3 +36,4 @@ Desktop.ini
 ## Ignore local config / secrets
 appsettings.Development.json
 secrets.json
+
