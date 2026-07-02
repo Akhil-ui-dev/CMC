@@ -9,11 +9,18 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
-var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") 
-    ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 
-builder.Services.AddDbContext<ChurchDbContext>(options =>
-    options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString)));
+if (string.IsNullOrEmpty(connectionString) || connectionString.Contains("Server=localhost"))
+{
+    builder.Services.AddDbContext<ChurchDbContext>(options =>
+        options.UseSqlite("Data Source=christ_miracle.db"));
+}
+else
+{
+    builder.Services.AddDbContext<ChurchDbContext>(options =>
+        options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString)));
+}
 
 builder.Services.AddSingleton<AppStateService>();
 
