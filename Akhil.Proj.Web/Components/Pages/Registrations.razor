@@ -1,0 +1,110 @@
+@page "/registrations"
+
+<PageTitle>CHRIST MIRACLE CHURCH - Registered Details</PageTitle>
+
+@if (AppState.ActiveRole != "Admin")
+{
+    <div class="row justify-content-center my-5">
+        <div class="col-md-6 text-center">
+            <div class="glass-panel py-5 px-4 shadow-lg border border-danger border-opacity-20">
+                <i class="bi bi-shield-slash text-danger fs-1 mb-3"></i>
+                <h3 class="font-heading fw-bold text-white mb-2">Access Restricted</h3>
+                <p class="text-secondary small mb-4">This registration directory is only accessible to authorized administrators of Christ Miracle Church.</p>
+                <a href="" class="btn btn-premium px-4">Return Home</a>
+            </div>
+        </div>
+    </div>
+}
+else
+{
+<div class="row g-4 justify-content-center">
+    <div class="col-12">
+        <div class="glass-panel">
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4">
+                <div>
+                    <h2 class="font-heading text-white fw-bold m-0"><i class="bi bi-people text-primary"></i> Registrations Dashboard</h2>
+                    <p class="text-secondary small m-0">Real-time directory of all registered church members and their profile details.</p>
+                </div>
+                <span class="badge bg-primary px-3 py-2 fs-6">@AppState.Members.Count Total Members</span>
+            </div>
+
+            <!-- Search Filter -->
+            <div class="mb-4">
+                <div class="input-group">
+                    <span class="input-group-text bg-dark border-secondary border-opacity-20 text-muted"><i class="bi bi-search"></i></span>
+                    <input type="text" class="form-control form-glass" placeholder="Search by name, email, phone, location..." @bind="_searchQuery" @bind:event="oninput" />
+                </div>
+            </div>
+
+            <!-- Dashboard Table -->
+            <div class="table-responsive">
+                <table class="table table-dark table-hover table-striped align-middle border border-secondary border-opacity-10 m-0">
+                    <thead>
+                        <tr class="small text-secondary">
+                            <th>Member Name</th>
+                            <th>Email Address</th>
+                            <th>Phone Number</th>
+                            <th>Physical Location</th>
+                            <th>Family Members</th>
+                            <th>How Heard</th>
+                            <th>Interests / Ministries</th>
+                            <th>Registration Date</th>
+                        </tr>
+                    </thead>
+                    <tbody class="small text-light">
+                        @if (GetFilteredMembers().Count == 0)
+                        {
+                            <tr>
+                                <td colspan="8" class="text-center text-muted py-5">
+                                    <i class="bi bi-search text-muted fs-2 mb-2 d-block"></i>
+                                    No registered members match your search criteria.
+                                </td>
+                            </tr>
+                        }
+                        else
+                        {
+                            @foreach (var member in GetFilteredMembers())
+                            {
+                                <tr>
+                                    <td>
+                                        <div class="d-flex align-items-center gap-2">
+                                            <div class="avatar-circle bg-secondary text-white d-flex align-items-center justify-content-center fw-bold small" style="width: 30px; height: 30px; border-radius: 50%;">
+                                                @member.Name[0].ToString().ToUpper()
+                                            </div>
+                                            <span class="fw-bold text-white">@member.Name</span>
+                                        </div>
+                                    </td>
+                                    <td class="fw-mono text-secondary">@member.Email</td>
+                                    <td>@member.Phone</td>
+                                    <td>@(string.IsNullOrWhiteSpace(member.Address) ? "Not Provided" : member.Address)</td>
+                                    <td>@member.FamilyMembers</td>
+                                    <td>
+                                        <span class="badge bg-dark border border-secondary text-secondary">@member.HowHeard</span>
+                                    </td>
+                                    <td>
+                                        <div class="d-flex flex-wrap gap-1">
+                                            @if (member.Interests.Count == 0)
+                                            {
+                                                <span class="text-muted small">None Selected</span>
+                                            }
+                                            else
+                                            {
+                                                @foreach (var interest in member.Interests)
+                                                {
+                                                    <span class="badge bg-primary bg-opacity-20 text-primary" style="font-size: 0.65rem;">@interest</span>
+                                                }
+                                            }
+                                        </div>
+                                    </td>
+                                    <td class="text-muted">@member.JoinedDate.ToString("MMMM dd, yyyy")</td>
+                                </tr>
+                            }
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+}
+

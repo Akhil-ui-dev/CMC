@@ -1,0 +1,203 @@
+@page "/giving"
+
+<PageTitle>CHRIST MIRACLE CHURCH - Online Giving</PageTitle>
+
+<div class="row g-4 justify-content-center">
+    
+    <!-- Title -->
+    <div class="col-md-10 col-lg-8 text-center mb-2">
+        <h2 class="font-heading text-white fw-bold">Online Giving</h2>
+        <p class="text-secondary mx-auto" style="max-width: 500px;">Support our ministries, local outreach programs, and global mission trips safely and securely.</p>
+    </div>
+
+    <!-- MAIN PORTAL -->
+    <div class="col-md-10 col-lg-8">
+        <div class="glass-panel">
+            
+            @if (_paymentStep == 1)
+            {
+                <!-- STEP 1: FUND & AMOUNT SELECTION -->
+                <h4 class="font-heading text-white fw-bold mb-4"><i class="bi bi-gift text-primary"></i> 1. Select Fund & Amount</h4>
+                
+                <!-- Fund Choice Cards -->
+                <label class="form-label text-secondary small d-block mb-3">Choose Target Fund</label>
+                <div class="row g-3 mb-4">
+                    <div class="col-sm-4">
+                        <div class="action-card glass-card text-center p-3 h-100 @(_selectedFund == "General Tithe" ? "border-primary" : "")" @onclick='() => SelectFund("General Tithe")'>
+                            <i class="bi bi-wallet2 text-primary fs-3 mb-2 d-block"></i>
+                            <h6 class="fw-bold text-white m-0">General Tithe</h6>
+                            <span class="text-muted" style="font-size: 0.65rem;">Day-to-day operations and staff</span>
+                        </div>
+                    </div>
+                    <div class="col-sm-4">
+                        <div class="action-card glass-card text-center p-3 h-100 @(_selectedFund == "Building Fund" ? "border-primary" : "")" @onclick='() => SelectFund("Building Fund")'>
+                            <i class="bi bi-building text-accent fs-3 mb-2 d-block"></i>
+                            <h6 class="fw-bold text-white m-0">Building Fund</h6>
+                            <span class="text-muted" style="font-size: 0.65rem;">Facility repairs and expansion projects</span>
+                        </div>
+                    </div>
+                    <div class="col-sm-4">
+                        <div class="action-card glass-card text-center p-3 h-100 @(_selectedFund == "Missions & Charity" ? "border-primary" : "")" @onclick='() => SelectFund("Missions & Charity")'>
+                            <i class="bi bi-globe-americas text-success fs-3 mb-2 d-block"></i>
+                            <h6 class="fw-bold text-white m-0">Missions</h6>
+                            <span class="text-muted" style="font-size: 0.65rem;">Local food pantry and foreign missions</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Select Amount -->
+                <label class="form-label text-secondary small d-block mb-3">Choose Donation Amount (USD)</label>
+                <div class="d-flex flex-wrap gap-2 mb-3 justify-content-center">
+                    @foreach (var amount in _presetAmounts)
+                    {
+                        <button type="button" class="btn btn-sm @(_donationAmount == amount ? "btn-premium" : "btn-premium-secondary") px-4 py-2" @onclick="() => SelectAmount(amount)">
+                            $@amount
+                        </button>
+                    }
+                </div>
+
+                <!-- Custom Amount Input -->
+                <div class="mb-4">
+                    <label class="form-label text-secondary small">Custom Amount</label>
+                    <div class="input-group">
+                        <span class="input-group-text bg-dark border-secondary border-opacity-20 text-white">$</span>
+                        <input type="number" class="form-control form-glass" min="1" @bind="_donationAmount" @bind:event="oninput" placeholder="Enter custom amount..." />
+                    </div>
+                </div>
+
+                <div class="text-end">
+                    <button class="btn btn-premium px-5" disabled="@(_donationAmount <= 0)" @onclick="GoToPaymentDetails">
+                        Continue to Payment <i class="bi bi-arrow-right"></i>
+                    </button>
+                </div>
+            }
+            else if (_paymentStep == 2)
+            {
+                <!-- STEP 2: CREDIT CARD INPUTS -->
+                <div class="row g-4">
+                    <div class="col-lg-5">
+                        <h4 class="font-heading text-white fw-bold mb-4">Card Visual</h4>
+                        
+                        <!-- Credit Card Preview -->
+                        <div class="card-preview">
+                            <div class="d-flex justify-content-between align-items-start mb-4">
+                                <span class="fw-bold small italic">GraceComm Card</span>
+                                <i class="bi bi-credit-card-2-front fs-2"></i>
+                            </div>
+                            
+                            <h5 class="fw-mono text-center tracking-widest text-white mb-3">
+                                @(string.IsNullOrWhiteSpace(_cardNumber) ? "•••• •••• •••• ••••" : _cardNumber)
+                            </h5>
+
+                            <div class="d-flex justify-content-between align-items-center mt-3">
+                                <div>
+                                    <span class="d-block" style="font-size: 0.5rem; text-transform: uppercase;">Cardholder</span>
+                                    <span class="small fw-semibold">@(string.IsNullOrWhiteSpace(_cardName) ? "YOUR NAME" : _cardName.ToUpper())</span>
+                                </div>
+                                <div class="text-end">
+                                    <span class="d-block" style="font-size: 0.5rem; text-transform: uppercase;">Expires</span>
+                                    <span class="small fw-semibold">@(string.IsNullOrWhiteSpace(_cardExpiry) ? "MM/YY" : _cardExpiry)</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="glass-panel bg-dark bg-opacity-20 text-center py-2 px-3 rounded">
+                            <span class="text-accent small"><i class="bi bi-shield-fill-check"></i> SSL Mock 256-bit Encrypted</span>
+                        </div>
+                    </div>
+
+                    <div class="col-lg-7">
+                        <h4 class="font-heading text-white fw-bold mb-4"><i class="bi bi-credit-card text-primary"></i> 2. Card Details</h4>
+                        
+                        <form @onsubmit="ProcessDonation">
+                            <div class="mb-3">
+                                <label class="form-label text-secondary small">Cardholder Name</label>
+                                <input type="text" class="form-control form-glass" required @bind="_cardName" @bind:event="oninput" placeholder="e.g. John Doe" />
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label text-secondary small">Card Number</label>
+                                <input type="text" class="form-control form-glass" required maxlength="19" @bind="_cardNumber" @bind:event="oninput" @onkeypress="FormatCardNumber" placeholder="4111 2222 3333 4444" />
+                            </div>
+
+                            <div class="row mb-4">
+                                <div class="col-6">
+                                    <label class="form-label text-secondary small">Expiry Date</label>
+                                    <input type="text" class="form-control form-glass text-center" required maxlength="5" @bind="_cardExpiry" @bind:event="oninput" @onkeypress="FormatExpiry" placeholder="MM/YY" />
+                                </div>
+                                <div class="col-6">
+                                    <label class="form-label text-secondary small">CVV Code</label>
+                                    <input type="password" class="form-control form-glass text-center" required maxlength="3" @bind="_cardCvv" placeholder="•••" />
+                                </div>
+                            </div>
+
+                            <div class="d-flex justify-content-between gap-2 mt-4">
+                                <button type="button" class="btn btn-premium-secondary" @onclick="() => _paymentStep = 1">
+                                    <i class="bi bi-arrow-left"></i> Back
+                                </button>
+                                <button type="submit" class="btn btn-premium px-4">
+                                    Authorize Payment of $@_donationAmount
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            }
+            else if (_paymentStep == 3)
+            {
+                <!-- STEP 3: LOADING SIMULATION -->
+                <div class="text-center py-5">
+                    <div class="spinner-border text-primary mb-3" style="width: 3rem; height: 3rem;" role="status"></div>
+                    <h5 class="text-white fw-bold">Processing Transaction...</h5>
+                    <p class="text-secondary small mt-1">Please do not refresh the page. We are securely matching token identifiers.</p>
+                    
+                    <div class="progress-bar-container mx-auto mt-4" style="max-width: 300px;">
+                        <div class="progress-bar-fill" style="width: @(_progressVal)%; transition: width 0.1s;"></div>
+                    </div>
+                </div>
+            }
+            else if (_paymentStep == 4)
+            {
+                <!-- STEP 4: SUCCESS AND RECEIPT -->
+                <div class="text-center py-4">
+                    <div class="bg-success text-white p-3 rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 70px; height: 70px;">
+                        <i class="bi bi-check-lg fs-1"></i>
+                    </div>
+                    <h3 class="font-heading text-white fw-bold">Thank You For Giving!</h3>
+                    <p class="text-secondary mx-auto mt-1 mb-4" style="max-width: 450px;">Your transaction was successful. An official giving statement has been generated and logged under your profile.</p>
+
+                    <!-- Receipt Detail Box -->
+                    <div class="glass-panel text-start mx-auto p-4 mb-4" style="max-width: 500px; background: rgba(0,0,0,0.25); border: 1px dashed rgba(255, 255, 255, 0.15);">
+                        <div class="d-flex justify-content-between mb-2 small">
+                            <span class="text-muted">Transaction ID:</span>
+                            <span class="text-white fw-mono">TXN-@_txnId</span>
+                        </div>
+                        <div class="d-flex justify-content-between mb-2 small">
+                            <span class="text-muted">Target Fund:</span>
+                            <span class="text-white fw-bold">@_selectedFund</span>
+                        </div>
+                        <div class="d-flex justify-content-between mb-2 small">
+                            <span class="text-muted">Authorized Amount:</span>
+                            <span class="text-success fw-bold">$@_donationAmount</span>
+                        </div>
+                        <div class="d-flex justify-content-between mb-2 small">
+                            <span class="text-muted">Payment Source:</span>
+                            <span class="text-white">Visa ending in @_cardNumber.Substring(Math.Max(0, _cardNumber.Length - 4))</span>
+                        </div>
+                        <div class="d-flex justify-content-between small">
+                            <span class="text-muted">Date & Time:</span>
+                            <span class="text-white">@DateTime.Now.ToString("g")</span>
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-center gap-2">
+                        <button class="btn btn-premium" @onclick="ResetGivingFlow">Make Another Donation</button>
+                        <a href="" class="btn btn-premium-secondary">Return Home</a>
+                    </div>
+                </div>
+            }
+
+        </div>
+    </div>
+</div>
+

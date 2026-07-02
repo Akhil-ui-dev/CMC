@@ -1,0 +1,301 @@
+@page "/gallery"
+
+<PageTitle>CHRIST MIRACLE CHURCH - Photo Gallery</PageTitle>
+
+<div class="row g-4">
+    <!-- Gallery Header -->
+    <div class="col-12 d-flex justify-content-between align-items-center flex-wrap gap-3 mb-2">
+        <div>
+            <h2 class="font-heading text-white fw-bold m-0">Media Gallery</h2>
+            <p class="text-secondary small m-0">Memories from our gatherings, community outreach, and special services.</p>
+        </div>
+        
+        <div class="d-flex gap-2">
+            <button class="btn btn-premium btn-sm" @onclick="OpenUploadModal">
+                <i class="bi bi-cloud-upload"></i> Share Event Photo
+            </button>
+            <!-- @if (AppState.CurrentUser == null)
+            {
+                <a href="auth" class="btn btn-premium-secondary btn-sm">
+                    <i class="bi bi-box-arrow-in-right"></i> Sign In
+                </a>
+            } -->
+        </div>
+    </div>
+
+    <!-- Album Filter Tabs -->
+    <div class="col-12">
+        <div class="glass-tab-container">
+            <button class="glass-tab @(_selectedAlbum == "All" ? "active" : "")" @onclick='() => FilterGallery("All")'>All Albums</button>
+            <button class="glass-tab @(_selectedAlbum == "Baptisms" ? "active" : "")" @onclick='() => FilterGallery("Baptisms")'>Baptisms</button>
+            <button class="glass-tab @(_selectedAlbum == "Youth Camp" ? "active" : "")" @onclick='() => FilterGallery("Youth Camp")'>Youth Camp</button>
+            <button class="glass-tab @(_selectedAlbum == "Choir" ? "active" : "")" @onclick='() => FilterGallery("Choir")'>Choir</button>
+            <button class="glass-tab @(_selectedAlbum == "Outreach" ? "active" : "")" @onclick='() => FilterGallery("Outreach")'>Outreach</button>
+        </div>
+    </div>
+
+    <!-- Admin Approval Dashboard Banner -->
+    @if (AppState.ActiveRole == "Admin")
+    {
+        var pendingCount = AppState.GalleryImages.Count(g => !g.IsApproved);
+        @if (pendingCount > 0)
+        {
+            <div class="col-12">
+                <div class="glass-panel border-warning" style="background: rgba(255, 176, 58, 0.05);">
+                    <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+                        <div class="d-flex align-items-center gap-2">
+                            <i class="bi bi-shield-exclamation text-warning fs-3"></i>
+                            <div>
+                                <h6 class="m-0 text-white fw-bold">Moderation Alert</h6>
+                                <span class="text-secondary small">There are @pendingCount photo uploads awaiting moderator review.</span>
+                            </div>
+                        </div>
+                        <button class="btn btn-sm btn-premium-accent" @onclick="() => _showModerationTab = !_showModerationTab">
+                            <i class="bi bi-list-check"></i> @(_showModerationTab ? "Hide Queue" : "Review Queue")
+                        </button>
+                    </div>
+
+                    @if (_showModerationTab)
+                    {
+                        <hr class="border-secondary border-opacity-20 my-3" />
+                        <div class="row g-3">
+                            @foreach (var pending in AppState.GalleryImages.Where(g => !g.IsApproved))
+                            {
+                                <div class="col-sm-6 col-md-4">
+                                    <div class="glass-card p-2 text-start">
+                                        <img src="@pending.ImageUrl" class="img-fluid rounded border border-secondary border-opacity-20 mb-2" style="max-height: 120px; object-fit: cover; width: 100%;" alt="Pending image thumbnail" />
+                                        <strong class="text-white small d-block">@pending.Caption</strong>
+                                        <span class="text-muted d-block" style="font-size: 0.75rem;">Album: @pending.Album | By: @pending.UploadedBy</span>
+                                        
+                                        <div class="d-flex gap-2 mt-3 justify-content-end">
+                                            <button class="btn btn-sm btn-danger py-1 px-3" @onclick="() => RejectImage(pending.Id)">Reject</button>
+                                            <button class="btn btn-sm btn-success py-1 px-3" @onclick="() => ApproveImage(pending.Id)">Approve</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    }
+                </div>
+            </div>
+        }
+    }
+
+    <!-- Photo Thumbnail Grid -->
+    <div class="col-12 mt-2">
+        <div class="row g-4">
+            @if (GetApprovedImages().Count == 0)
+            {
+                <div class="col-12">
+                    <div class="glass-panel text-center py-5">
+                        <i class="bi bi-image text-muted fs-1 mb-2 d-block"></i>
+                        <h5 class="text-white fw-bold">No Photos in Album</h5>
+                        <p class="text-secondary small">No approved images exist under this filter category.</p>
+                    </div>
+                </div>
+            }
+            else
+            {
+                @foreach (var img in GetApprovedImages())
+                {
+                    <div class="col-sm-6 col-md-4">
+                        <div class="glass-card p-2 hover-zoom-box" style="cursor: pointer;" @onclick="() => OpenLightbox(img)">
+                            <div class="ratio ratio-4x3 rounded overflow-hidden border border-secondary border-opacity-10 position-relative">
+                                <img src="@img.ImageUrl" class="img-fluid object-fit-cover w-100 h-100" style="transition: transform 0.3s ease;" alt="@img.Caption" />
+                                <div class="gallery-hover-overlay position-absolute top-0 start-0 w-100 h-100 bg-dark bg-opacity-40 opacity-0 d-flex align-items-center justify-content-center" style="transition: opacity 0.2s;">
+                                    <i class="bi bi-zoom-in text-white fs-3"></i>
+                                </div>
+                            </div>
+                            <div class="px-2 py-3">
+                                <span class="badge bg-secondary mb-2" style="font-size: 0.65rem;">@img.Album</span>
+                                <h6 class="text-white fw-semibold m-0 text-truncate">@img.Caption</h6>
+                                <span class="text-muted" style="font-size: 0.75rem;">Shared by: @img.UploadedBy.Split('@')[0]</span>
+                            </div>
+                        </div>
+                    </div>
+                }
+            }
+        </div>
+    </div>
+</div>
+
+<!-- LIGHTBOX MODAL -->
+@if (_activeLightboxImage != null)
+{
+    var approvedList = GetApprovedImages();
+    var currentIndex = approvedList.FindIndex(i => i.Id == _activeLightboxImage.Id);
+
+    <div class="modal-backdrop fade show" style="background: rgba(0,0,0,0.92); backdrop-filter: blur(10px);"></div>
+    <div class="modal show d-block" tabindex="-1" style="z-index: 1100;" @onclick="CloseLightbox">
+        <div class="modal-dialog modal-dialog-centered modal-xl" @onclick:stopPropagation>
+            <div class="modal-content border-0 shadow-none bg-transparent text-center position-relative">
+                
+                <button type="button" class="btn-close btn-close-white position-absolute top-0 end-0 m-2 p-2 bg-dark rounded-circle" style="z-index: 10;" aria-label="Close" @onclick="CloseLightbox"></button>
+                
+                <!-- Main Lightbox Image -->
+                <div class="d-flex align-items-center justify-content-center position-relative" style="min-height: 60vh; max-height: 80vh;">
+                    <img src="@_activeLightboxImage.ImageUrl" class="img-fluid rounded border border-secondary border-opacity-10 shadow" style="max-height: 75vh; object-fit: contain;" alt="@_activeLightboxImage.Caption" />
+                </div>
+
+                <!-- Navigation Arrows -->
+                @if (approvedList.Count > 1)
+                {
+                    <button class="btn btn-link text-white position-absolute start-0 top-50 translate-middle-y bg-dark bg-opacity-40 rounded-circle p-3 ms-2" style="width: 55px; height: 55px;" @onclick="PrevImage">
+                        <i class="bi bi-chevron-left fs-3"></i>
+                    </button>
+                    <button class="btn btn-link text-white position-absolute end-0 top-50 translate-middle-y bg-dark bg-opacity-40 rounded-circle p-3 me-2" style="width: 55px; height: 55px;" @onclick="NextImage">
+                        <i class="bi bi-chevron-right fs-3"></i>
+                    </button>
+                }
+
+                <!-- Caption Overlay -->
+                <div class="p-3 bg-dark bg-opacity-75 rounded-bottom border-top border-secondary border-opacity-15 mt-3 max-width-600 mx-auto w-100">
+                    <h5 class="text-white fw-bold m-0">@_activeLightboxImage.Caption</h5>
+                    <span class="text-secondary small">Album: @_activeLightboxImage.Album | Uploaded by: @_activeLightboxImage.UploadedBy on @_activeLightboxImage.UploadedDate.ToString("MMMM dd, yyyy")</span>
+                    
+                    <div class="mt-3">
+                        <a href="@_activeLightboxImage.ImageUrl" download class="btn btn-sm btn-premium-secondary">
+                            <i class="bi bi-download"></i> Save/Download Image
+                        </a>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+}
+
+<!-- MEMBER UPLOAD MODAL -->
+@if (_showUploadModal)
+{
+    <div class="modal-backdrop fade show" style="background: rgba(0,0,0,0.85); backdrop-filter: blur(8px);"></div>
+    <div class="modal show d-block" tabindex="-1" style="z-index: 1050;">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content glass-panel border border-secondary border-opacity-20 text-start p-4" style="background: var(--bg-secondary);">
+                
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h4 class="font-heading text-white fw-bold m-0"><i class="bi bi-upload text-primary"></i> Upload Event Photo</h4>
+                    <button type="button" class="btn-close btn-close-white" aria-label="Close" @onclick="CloseUploadModal"></button>
+                </div>
+
+                @if (_uploadSuccess)
+                {
+                    <div class="alert alert-success d-flex align-items-center gap-2 mb-4" role="alert">
+                        <i class="bi bi-check-circle-fill"></i>
+                        <div class="small">
+                            <strong>Upload Completed!</strong> Photo has been uploaded successfully and is now visible in the gallery.
+                        </div>
+                    </div>
+                    <button class="btn btn-premium w-100" @onclick="CloseUploadModal">Back to Gallery</button>
+                }
+                else
+                {
+                    <form @onsubmit="SubmitUserPhoto">
+                        @if (AppState.CurrentUser != null)
+                        {
+                            <div class="mb-3 p-2 rounded" style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05);">
+                                <span class="text-secondary small d-block">Sharing as:</span>
+                                <strong class="text-white small">@AppState.CurrentUser.Name (@AppState.CurrentUser.Email)</strong>
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="row g-2 mb-3">
+                                <div class="col-6">
+                                    <label class="form-label text-secondary small">Your Name</label>
+                                    <input type="text" class="form-control form-glass" required @bind="_guestName" placeholder="e.g. John Doe" />
+                                </div>
+                                <div class="col-6">
+                                    <label class="form-label text-secondary small">Your Email</label>
+                                    <input type="email" class="form-control form-glass" required @bind="_guestEmail" placeholder="e.g. john@example.com" />
+                                </div>
+                            </div>
+                        }
+
+                        <div class="mb-3">
+                            <label class="form-label text-secondary small">Caption / Description</label>
+                            <input type="text" class="form-control form-glass" required @bind="_uploadCaption" placeholder="What was happening in this photo?" />
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label text-secondary small">Target Album</label>
+                            <select class="form-select form-glass" required @bind="_uploadAlbum">
+                                <option value="Baptisms">Baptisms</option>
+                                <option value="Youth Camp">Youth Camp</option>
+                                <option value="Choir">Choir</option>
+                                <option value="Outreach">Outreach</option>
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label text-secondary small d-block">Choose Image Source</label>
+                            <div class="btn-group w-100" role="group">
+                                <button type="button" class="btn btn-sm @(_uploadTab == "file" ? "btn-premium" : "btn-premium-secondary")" @onclick='() => SetUploadTab("file")'>
+                                    <i class="bi bi-file-image"></i> Local File
+                                </button>
+                                <button type="button" class="btn btn-sm @(_uploadTab == "url" ? "btn-premium" : "btn-premium-secondary")" @onclick='() => SetUploadTab("url")'>
+                                    <i class="bi bi-link-45deg"></i> Image URL
+                                </button>
+                            </div>
+                        </div>
+
+                        @if (_uploadTab == "file")
+                        {
+                            <div class="mb-3">
+                                <label class="form-label text-secondary small">Select Image File</label>
+                                <InputFile OnChange="HandleFileSelected" class="d-none" id="galleryFileInput" accept=".jpg,.jpeg,.png,.webp,.gif" />
+                                <label for="galleryFileInput" class="d-flex flex-column align-items-center justify-content-center border border-dashed rounded p-4 text-center cursor-pointer" style="border-color: rgba(255, 255, 255, 0.2) !important; cursor: pointer; background: rgba(255, 255, 255, 0.02); transition: all 0.2s; min-height: 140px;">
+                                    @if (_isUploadingFile)
+                                    {
+                                        <div class="spinner-border text-primary mb-2" role="status">
+                                            <span class="visually-hidden">Loading...</span>
+                                        </div>
+                                        <span class="text-white small">Reading file...</span>
+                                    }
+                                    else if (!string.IsNullOrEmpty(_uploadedFileUrl))
+                                    {
+                                        <img src="@_uploadedFileUrl" class="img-fluid rounded mb-2" style="max-height: 120px; object-fit: cover;" />
+                                        <span class="text-success small fw-semibold"><i class="bi bi-check-circle-fill"></i> Image loaded! Click to replace.</span>
+                                    }
+                                    else
+                                    {
+                                        <i class="bi bi-cloud-arrow-up-fill text-primary fs-2 mb-2"></i>
+                                        <span class="text-white fw-semibold small">Choose or Drag Image</span>
+                                        <span class="text-muted" style="font-size: 0.7rem;">PNG, JPG, WEBP, GIF up to 5MB</span>
+                                    }
+                                </label>
+                                @if (!string.IsNullOrEmpty(_fileUploadError))
+                                {
+                                    <div class="text-danger small mt-1"><i class="bi bi-exclamation-triangle"></i> @_fileUploadError</div>
+                                }
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="mb-3">
+                                <label class="form-label text-secondary small">Image URL</label>
+                                <input type="text" class="form-control form-glass" @bind="_uploadImageUrl" placeholder="https://example.com/image.jpg" />
+                                <span class="text-muted" style="font-size: 0.7rem; display: block; margin-top: 4px;">Paste any web image URL (or leave blank to auto-generate a random image).</span>
+                                
+                                @if (!string.IsNullOrEmpty(_uploadImageUrl))
+                                {
+                                    <div class="mt-2 text-center">
+                                        <span class="text-secondary small d-block mb-1">Preview:</span>
+                                        <img src="@_uploadImageUrl" class="img-fluid rounded border border-secondary border-opacity-10" style="max-height: 120px; object-fit: cover;" />
+                                    </div>
+                                }
+                            </div>
+                        }
+
+                        <div class="d-flex justify-content-end gap-2 mt-4">
+                            <button type="button" class="btn btn-premium-secondary" @onclick="CloseUploadModal">Cancel</button>
+                            <button type="submit" class="btn btn-premium" disabled="@(_isUploadingFile)">Submit for Review</button>
+                        </div>
+                    </form>
+                }
+
+            </div>
+        </div>
+    </div>
+}
+

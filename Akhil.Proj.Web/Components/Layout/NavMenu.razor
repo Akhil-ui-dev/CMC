@@ -1,0 +1,77 @@
+
+<div class="top-row ps-3 navbar navbar-dark">
+    <div class="container-fluid">
+        <a class="navbar-brand font-heading fw-bold d-flex align-items-center gap-2" href="">
+            <i class="bi bi-church-fill text-primary"></i>
+            <span>Christ Miracle</span>
+        </a>
+    </div>
+</div>
+
+<input type="checkbox" title="Navigation menu" class="navbar-toggler" style="display: none;" />
+
+<div class="nav-scrollable">
+    <nav class="nav flex-column">
+        <div class="nav-item px-2">
+            <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
+                <i class="bi bi-house"></i> Home
+            </NavLink>
+        </div>
+
+        @if (AppState.ActiveRole == "Admin")
+        {
+            <div class="nav-item px-2">
+                <NavLink class="nav-link" href="registrations">
+                    <i class="bi bi-people"></i> Registrations
+                </NavLink>
+            </div>
+        }
+
+        <div class="nav-item px-2">
+            <NavLink class="nav-link" href="news">
+                <i class="bi bi-journal-text"></i> News & Feed
+            </NavLink>
+        </div>
+
+        <div class="nav-item px-2">
+            <NavLink class="nav-link" href="gallery">
+                <i class="bi bi-images"></i> Gallery
+            </NavLink>
+        </div>
+
+        <div class="nav-item px-2">
+            <NavLink class="nav-link" href="events">
+                <i class="bi bi-calendar-event"></i> Events & RSVP
+            </NavLink>
+        </div>
+
+        <div class="nav-item px-2">
+            <NavLink class="nav-link" href="prayer">
+                <i class="bi bi-heart"></i> Prayer Wall
+            </NavLink>
+        </div>
+
+        <div class="nav-item px-2">
+            <NavLink class="nav-link" href="live">
+                <i class="bi bi-broadcast text-danger"></i> Live Stream
+            </NavLink>
+        </div>
+
+
+        <div class="nav-item px-2 border-top border-secondary mt-3 pt-3">
+            @if (AppState.ActiveRole == "Admin")
+            {
+                <NavLink class="nav-link text-warning" href="admin">
+                    <i class="bi bi-shield-lock-fill"></i> Admin Console
+                </NavLink>
+            }
+            else
+            {
+                <NavLink class="nav-link text-muted" href="admin">
+                    <i class="bi bi-lock"></i> Admin Dashboard
+                </NavLink>
+            }
+        </div>
+    </nav>
+</div>
+

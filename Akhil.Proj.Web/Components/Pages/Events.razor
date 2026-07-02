@@ -1,0 +1,159 @@
+@page "/events"
+
+<PageTitle>CHRIST MIRACLE CHURCH - Church Events</PageTitle>
+
+<div class="row g-4">
+    <!-- Header -->
+    <div class="col-12 d-flex justify-content-between align-items-center flex-wrap gap-3 mb-2">
+        <div>
+            <h2 class="font-heading text-white fw-bold m-0">Upcoming Gatherings</h2>
+            <p class="text-secondary small m-0">RSVP to let us know you're coming, or sign up as a volunteer to serve this week.</p>
+        </div>
+        <button class="btn btn-premium btn-sm" @onclick="OpenCreateEventModal">
+            <i class="bi bi-calendar-plus"></i> Create Event
+        </button>
+    </div>
+
+    <!-- Event List -->
+    <div class="col-12 mt-2">
+        <div class="row g-4">
+            @foreach (var ev in AppState.Events)
+            {
+                <div class="col-lg-6">
+                    <div class="glass-card p-4 h-100 d-flex flex-column justify-content-between">
+                        <div>
+                            <!-- Event Head -->
+                            <div class="d-flex justify-content-between align-items-start gap-2 mb-3">
+                                <div>
+                                    <span class="text-accent small fw-bold d-block mb-1"><i class="bi bi-clock"></i> @ev.DateText</span>
+                                    <h4 class="font-heading text-white fw-bold h4 m-0">@ev.Title</h4>
+                                </div>
+                                <div class="d-flex align-items-center gap-2">
+                                    <span class="badge bg-success px-2 py-1">@GetYesCount(ev) YES</span>
+                                    <span class="badge bg-danger px-2 py-1">@GetNoCount(ev) NO</span>
+                                    <button class="btn btn-sm btn-dark bg-opacity-40 border border-secondary border-opacity-20 rounded-circle p-2 d-flex align-items-center justify-content-center text-primary" style="width: 32px; height: 32px;" title="Edit Event" @onclick="() => OpenEditEventModal(ev)">
+                                        <i class="bi bi-pencil"></i>
+                                    </button>
+                                    <button class="btn btn-sm btn-dark bg-opacity-40 border border-secondary border-opacity-20 rounded-circle p-2 d-flex align-items-center justify-content-center text-danger" style="width: 32px; height: 32px;" title="Delete Event" @onclick="() => HandleDeleteEvent(ev)">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <p class="text-secondary small mb-4" style="line-height: 1.5;">
+                                @ev.Description
+                            </p>
+
+                            <!-- RSVP PANEL -->
+                            <div class="glass-panel p-3 bg-dark bg-opacity-20 mb-4">
+                                <h6 class="text-white small fw-bold mb-2">Will you be attending?</h6>
+                                
+                                <div class="btn-group w-100" role="group">
+                                    <button type="button" class="btn btn-sm @(GetRSVPStatus(ev) == "Yes" ? "btn-success" : "btn-premium-secondary")" @onclick='() => SetRSVP(ev.Id, "Yes")'>
+                                        <i class="bi bi-check-circle"></i> Yes
+                                    </button>
+                                    <button type="button" class="btn btn-sm @(GetRSVPStatus(ev) == "No" ? "btn-danger" : "btn-premium-secondary")" @onclick='() => SetRSVP(ev.Id, "No")'>
+                                        <i class="bi bi-x-circle"></i> No
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- VOLUNTEER REGISTRY -->
+                        <div>
+                            <h6 class="text-white fw-bold mb-3 d-flex align-items-center gap-2">
+                                <i class="bi bi-people text-primary"></i> Volunteer Service Openings
+                            </h6>
+
+                            <div class="d-flex flex-column gap-2.5">
+                                @foreach (var role in _volunteerRoles)
+                                {
+                                    var volunteerEmail = GetVolunteerForRole(ev, role);
+                                    
+                                    <div class="d-flex align-items-center justify-content-between p-2 rounded bg-dark bg-opacity-25" style="border: 1px solid rgba(255,255,255,0.03);">
+                                        <div>
+                                            <span class="text-white small fw-bold d-block">@role</span>
+                                            @if (volunteerEmail != null)
+                                            {
+                                                <span class="text-success small" style="font-size: 0.75rem;">
+                                                    <i class="bi bi-check-circle-fill"></i> @GetVolunteerName(volunteerEmail)
+                                                </span>
+                                            }
+                                            else
+                                            {
+                                                <span class="text-white-50 small" style="font-size: 0.75rem; font-style: italic;">
+                                                    Position Vacant — Need Volunteer
+                                                </span>
+                                            }
+                                        </div>
+
+                                        @if (AppState.CurrentUser != null)
+                                        {
+                                            @if (volunteerEmail == AppState.CurrentUser.Email)
+                                            {
+                                                <button class="btn btn-sm btn-outline-danger py-1 px-2.5" style="font-size: 0.75rem;" @onclick="() => CancelVolunteer(ev.Id)">
+                                                    Cancel
+                                                </button>
+                                            }
+                                            else if (volunteerEmail == null)
+                                            {
+                                                <button class="btn btn-sm btn-premium py-1 px-2.5" style="font-size: 0.75rem;" @onclick="() => AcceptVolunteer(ev.Id, role)">
+                                                    Serve
+                                                </button>
+                                            }
+                                        }
+                                    </div>
+                                }
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+<!-- MODAL: CREATE / EDIT EVENT -->
+@if (_showEventModal)
+{
+    <div class="modal-backdrop fade show" style="background: rgba(0,0,0,0.85); backdrop-filter: blur(8px);"></div>
+    <div class="modal show d-block" tabindex="-1" style="z-index: 1050; overflow-y: auto;">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content glass-panel border border-secondary border-opacity-20 text-start p-4" style="background: var(--bg-secondary);">
+                
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h4 class="font-heading text-white fw-bold m-0">
+                        <i class="bi @(_editingEvent == null ? "bi-calendar-plus text-primary" : "bi-pencil-square text-primary")"></i>
+                        @(_editingEvent == null ? "Create Church Event" : "Edit Church Event")
+                    </h4>
+                    <button type="button" class="btn-close btn-close-white" aria-label="Close" @onclick="CloseEventModal"></button>
+                </div>
+
+                <form @onsubmit="SubmitForm">
+                    <div class="mb-3">
+                        <label class="form-label text-secondary small">Event Title</label>
+                        <input type="text" class="form-control form-glass" required @bind="_eventTitle" placeholder="e.g. Sunday Youth Fellowship" />
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label text-secondary small">Date and Time Text</label>
+                        <input type="text" class="form-control form-glass" required @bind="_eventDateText" placeholder="e.g. Sunday, June 28 at 6:00 PM" />
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label text-secondary small">Event Description</label>
+                        <textarea class="form-control form-glass" rows="4" required @bind="_eventDescription" placeholder="Provide event details, address, and logistics info..."></textarea>
+                    </div>
+
+                    <div class="d-flex justify-content-end gap-2 mt-4">
+                        <button type="button" class="btn btn-premium-secondary" @onclick="CloseEventModal">Cancel</button>
+                        <button type="submit" class="btn btn-premium">@(_editingEvent == null ? "Create Event" : "Save Changes")</button>
+                    </div>
+                </form>
+
+            </div>
+        </div>
+    </div>
+}
+

@@ -1,0 +1,194 @@
+@page "/prayer"
+
+<PageTitle>CHRIST MIRACLE CHURCH - Prayer Wall</PageTitle>
+
+<div class="row g-4 justify-content-center">
+    <!-- Header -->
+    <div class="col-md-9 col-lg-8 d-flex justify-content-between align-items-center flex-wrap gap-3 mb-2">
+        <div>
+            <h2 class="font-heading text-white fw-bold m-0">Prayer Wall</h2>
+            <p class="text-secondary small m-0">Share your requests, carry one another's burdens, and stand together in faith.</p>
+        </div>
+        
+        <button class="btn btn-premium btn-sm" @onclick="OpenRequestModal">
+            <i class="bi bi-plus-circle"></i> Request Prayer
+        </button>
+    </div>
+
+    <!-- Feed / Request Cards -->
+    <div class="col-md-9 col-lg-8">
+        <div class="d-flex flex-column gap-4">
+            @if (AppState.Prayers.Count == 0)
+            {
+                <div class="glass-panel text-center py-5">
+                    <i class="bi bi-heart-pulse text-muted fs-1 mb-2 d-block"></i>
+                    <h5 class="text-white fw-bold">No Prayer Requests</h5>
+                    <p class="text-secondary small">The prayer wall is currently empty. Be the first to share a request.</p>
+                </div>
+            }
+            else
+            {
+                @foreach (var prayer in AppState.Prayers)
+                {
+                    <div class="glass-card p-4">
+                        <div class="d-flex justify-content-between align-items-start gap-2 mb-3">
+                            <div>
+                                <h4 class="font-heading text-white fw-bold h5 mb-1" @onclick="() => OpenEditModal(prayer)" style="cursor: pointer;" title="Click to view/edit details">@prayer.Title</h4>
+                                <span class="text-muted" style="font-size: 0.75rem;">
+                                    Posted by 
+                                    @if (prayer.IsAnonymous)
+                                    {
+                                        <strong class="text-secondary">Anonymous</strong>
+                                        @if (AppState.ActiveRole == "Admin")
+                                        {
+                                            <span class="text-warning small italic"> (Real: @prayer.AuthorName, Phone: @prayer.MobileNumber)</span>
+                                        }
+                                    }
+                                    else
+                                    {
+                                        <strong class="text-secondary">@prayer.AuthorName</strong>
+                                        @if (!string.IsNullOrEmpty(prayer.MobileNumber))
+                                        {
+                                            <span> (@prayer.MobileNumber)</span>
+                                        }
+                                    }
+                                    on @prayer.CreatedDate.ToString("MMMM dd, yyyy")
+                                </span>
+                            </div>
+                            <div class="d-flex align-items-center gap-2">
+                                @if (prayer.IsAnonymous)
+                                {
+                                    <span class="badge bg-dark border border-secondary text-secondary small"><i class="bi bi-eye-slash"></i> Anonymous</span>
+                                }
+                                <button class="btn btn-sm btn-link text-secondary p-0 ms-1" title="Edit" @onclick="() => OpenEditModal(prayer)"><i class="bi bi-pencil"></i></button>
+                                <button class="btn btn-sm btn-link text-danger p-0 ms-2" title="Delete" @onclick="() => DeleteRequest(prayer.Id)"><i class="bi bi-trash"></i></button>
+                            </div>
+                        </div>
+
+                        <p class="text-light small mb-4" style="line-height: 1.6; white-space: pre-line; cursor: pointer;" @onclick="() => OpenEditModal(prayer)" title="Click to view/edit details">
+                            @prayer.Details
+                        </p>
+
+                        <!-- Actions Area -->
+                        <div class="d-flex justify-content-between align-items-center border-top border-secondary border-opacity-10 pt-3 mb-3">
+                            <button class="btn btn-sm btn-premium-secondary d-flex align-items-center gap-2 @(HasPrayed(prayer) ? "btn-prayer-active" : "")" @onclick="() => TogglePraying(prayer)">
+                                <i class="bi @(HasPrayed(prayer) ? "bi-heart-fill" : "bi-heart")"></i>
+                                <span class="fw-bold">@(HasPrayed(prayer) ? "I'm Praying!" : "Pray")</span>
+                                <span class="badge bg-dark rounded-circle small px-2 py-1">@prayer.PrayingUsers.Count</span>
+                            </button>
+
+                            <button class="btn btn-sm btn-link text-secondary text-decoration-none d-flex align-items-center gap-1" @onclick="() => ToggleEncouragements(prayer.Id)">
+                                <i class="bi bi-chat-quote fs-5"></i>
+                                <span class="small">Encouragements (@prayer.Encouragements.Count)</span>
+                                <i class="bi @(_expandedPrayerId == prayer.Id ? "bi-chevron-up" : "bi-chevron-down") small ms-1"></i>
+                            </button>
+                        </div>
+
+                        <!-- Expanded Encouragements Segment -->
+                        @if (_expandedPrayerId == prayer.Id)
+                        {
+                            <div class="p-3 rounded mt-3" style="background: rgba(255, 255, 255, 0.01); border-left: 3px solid var(--primary);">
+                                <h6 class="text-white small fw-bold mb-3"><i class="bi bi-chat-left-text text-primary"></i> Encouragement & Hope Notes</h6>
+
+                                <!-- Comment Thread -->
+                                <div class="d-flex flex-column gap-3 mb-4">
+                                    @if (prayer.Encouragements.Count == 0)
+                                    {
+                                        <p class="text-muted small italic m-0">No messages yet. Send a note of support to let them know they are not alone.</p>
+                                    }
+                                    else
+                                    {
+                                        @foreach (var note in prayer.Encouragements.OrderBy(n => n.Timestamp))
+                                        {
+                                            <div class="small p-2.5 rounded bg-dark bg-opacity-25" style="border: 1px solid rgba(255, 255, 255, 0.03);">
+                                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                                    <span class="text-white fw-bold" style="font-size: 0.8rem;">@note.AuthorName</span>
+                                                    <span class="text-muted" style="font-size: 0.65rem;">@note.Timestamp.ToString("hh:mm tt")</span>
+                                                </div>
+                                                <span class="text-secondary">@note.Content</span>
+                                            </div>
+                                        }
+                                    }
+                                </div>
+
+                                <!-- Add Encouragement note Form -->
+                                @if (AppState.CurrentUser == null)
+                                {
+                                    <div class="alert alert-info py-1.5 px-3 small m-0" role="alert">
+                                        <span class="small">Please <a href="auth" class="fw-bold text-info text-decoration-underline">sign in</a> to leave encouraging notes.</span>
+                                    </div>
+                                }
+                                else
+                                {
+                                    <div class="input-group">
+                                        <input type="text" class="form-control form-glass form-control-sm small" placeholder="Type a word of support..." @bind="_encouragementText" @onkeyup="@(e => HandleKeyUp(e, prayer.Id))" />
+                                        <button class="btn btn-premium btn-sm" type="button" @onclick="() => SubmitEncouragement(prayer.Id)"><i class="bi bi-send"></i></button>
+                                    </div>
+                                }
+                            </div>
+                        }
+
+                    </div>
+                }
+            }
+        </div>
+    </div>
+</div>
+
+<!-- REQUEST MODAL -->
+@if (_showRequestModal)
+{
+    <div class="modal-backdrop fade show" style="background: rgba(0,0,0,0.85); backdrop-filter: blur(8px);"></div>
+    <div class="modal show d-block" tabindex="-1" style="z-index: 1050;">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content glass-panel border border-secondary border-opacity-20 text-start p-4" style="background: var(--bg-secondary);">
+                
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h4 class="font-heading text-white fw-bold m-0">
+                        <i class="bi bi-heart-pulse text-primary"></i> 
+                        @(_editingPrayerId.HasValue ? "Edit Prayer Request" : "Share a Prayer Request")
+                    </h4>
+                    <button type="button" class="btn-close btn-close-white" aria-label="Close" @onclick="CloseRequestModal"></button>
+                </div>
+
+                <form @onsubmit="SubmitRequest">
+                    <div class="mb-3">
+                        <label class="form-label text-secondary small">Full Name</label>
+                        <input type="text" class="form-control form-glass" required @bind="_reqFullName" placeholder="Your full name" />
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label text-secondary small">Mobile Number</label>
+                        <input type="tel" class="form-control form-glass" required @bind="_reqMobileNumber" placeholder="Your mobile number (e.g. 555-0100)" />
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label text-secondary small">Request Title</label>
+                        <input type="text" class="form-control form-glass" required @bind="_reqTitle" placeholder="e.g. Healing, Career Decision, Family Peace" />
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label text-secondary small">Details / Description</label>
+                        <textarea class="form-control form-glass" rows="5" required @bind="_reqDetails" placeholder="Share what is on your heart. Describe how the congregation can stand with you..."></textarea>
+                    </div>
+
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input type="checkbox" class="form-check-input darker-border-checkbox" id="postAnon" @bind="_reqIsAnonymous" />
+                            <label class="form-check-label text-secondary small" for="postAnon">
+                                Post Anonymously (Hides your profile name on the public feed)
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-end gap-2 mt-4">
+                        <button type="button" class="btn btn-premium-secondary" @onclick="CloseRequestModal">Cancel</button>
+                        <button type="submit" class="btn btn-premium">@(_editingPrayerId.HasValue ? "Save Changes" : "Post to Wall")</button>
+                    </div>
+                </form>
+
+            </div>
+        </div>
+    </div>
+}
+

@@ -1,0 +1,165 @@
+@page "/sermons"
+
+<PageTitle>CHRIST MIRACLE CHURCH - Sermons & Notes</PageTitle>
+
+<div class="row g-4">
+    <!-- Header -->
+    <div class="col-12 text-center text-md-start">
+        <h2 class="font-heading text-white fw-bold m-0">Sermon Notes & Podcast</h2>
+        <p class="text-secondary small m-0">Listen to Sunday messages and write personal notes to save under your profile.</p>
+    </div>
+
+    <!-- LEFT COLUMN: AUDIO PLAYER & SERMON ARCHIVE -->
+    <div class="col-lg-6">
+        <div class="glass-panel">
+            <h4 class="font-heading text-white fw-bold mb-4 d-flex align-items-center gap-2">
+                <i class="bi bi-music-note-beamed text-primary"></i> Media Player
+            </h4>
+
+            @if (_activeSermon == null)
+            {
+                <div class="p-4 text-center bg-dark bg-opacity-20 rounded border border-secondary border-opacity-10 mb-4">
+                    <i class="bi bi-play-circle-fill text-muted fs-1 mb-2 d-block"></i>
+                    <span class="text-secondary small">Select a sermon from the archive below to listen.</span>
+                </div>
+            }
+            else
+            {
+                <!-- Player Box -->
+                <div class="audio-player mb-4 text-center text-sm-start">
+                    <div class="d-flex align-items-center flex-column flex-sm-row gap-3 mb-3">
+                        <div class="bg-primary text-white p-3 rounded-3 d-flex align-items-center justify-content-center" style="width: 60px; height: 60px;">
+                            <i class="bi bi-headphones fs-2"></i>
+                        </div>
+                        <div class="flex-grow-1">
+                            <span class="badge bg-secondary mb-1">NOW PLAYING</span>
+                            <h5 class="text-white fw-bold m-0">@_activeSermon.Title</h5>
+                            <span class="text-muted small">@_activeSermon.Speaker | @_activeSermon.DateText</span>
+                        </div>
+                    </div>
+
+                    <!-- Custom Seek Control -->
+                    <div class="audio-controls mt-4">
+                        <button class="btn btn-premium p-2 rounded-circle d-flex align-items-center justify-content-center" style="width: 45px; height: 45px;" @onclick="ToggleAudioPlayback">
+                            <i class="bi @(_isAudioPlaying ? "bi-pause-fill" : "bi-play-fill") fs-4"></i>
+                        </button>
+                        
+                        <div class="progress-bar-container" @onclick="SeekAudio">
+                            <div class="progress-bar-fill" style="width: @(_playbackProgress)%;"></div>
+                        </div>
+
+                        <span class="text-muted small fw-mono" style="min-width: 90px; text-align: right;">
+                            @GetPlaybackTimeText() / @_activeSermon.DurationText
+                        </span>
+                    </div>
+
+                    <!-- HTML5 Audio Node Hidden Trigger -->
+                    <audio id="sermonAudio" src="@_activeSermon.AudioUrl" preload="auto" class="d-none"></audio>
+                </div>
+            }
+
+            <!-- Archive List -->
+            <h5 class="font-heading text-white fw-bold mb-3 mt-4">Recent Sermons</h5>
+            <div class="d-flex flex-column gap-3">
+                @foreach (var s in AppState.Sermons)
+                {
+                    <div class="d-flex justify-content-between align-items-center p-3 rounded bg-dark bg-opacity-25 border border-secondary border-opacity-10 hover-border" style="cursor: pointer;" @onclick="() => SelectSermon(s)">
+                        <div class="d-flex align-items-center gap-3">
+                            <i class="bi @(_activeSermon?.Id == s.Id ? "bi-headphones text-primary" : "bi-play-circle text-muted") fs-4"></i>
+                            <div>
+                                <h6 class="m-0 fw-bold text-white">@s.Title</h6>
+                                <span class="text-muted" style="font-size: 0.75rem;">@s.Speaker • @s.DateText</span>
+                            </div>
+                        </div>
+                        <span class="text-muted small fw-mono">@s.DurationText</span>
+                    </div>
+                }
+            </div>
+
+        </div>
+    </div>
+
+    <!-- RIGHT COLUMN: LIVE NOTES PANEL -->
+    <div class="col-lg-6">
+        <div class="glass-panel h-100 d-flex flex-column justify-content-between">
+            <div>
+                <h4 class="font-heading text-white fw-bold mb-3 d-flex align-items-center justify-content-between">
+                    <span><i class="bi bi-journal-text text-primary"></i> Take Notes</span>
+                    @if (AppState.CurrentUser != null)
+                    {
+                        <span class="badge bg-success small" style="font-size: 0.65rem;"><i class="bi bi-cloud-check"></i> Autosave Active</span>
+                    }
+                </h4>
+                
+                @if (AppState.CurrentUser == null)
+                {
+                    <div class="alert alert-info py-2 small mb-4" role="alert">
+                        <i class="bi bi-info-circle-fill"></i> Please <a href="auth" class="fw-bold text-info text-decoration-underline">sign in</a> to write notes and link them to your membership profile.
+                    </div>
+                }
+
+                <div class="mb-3">
+                    <label class="form-label text-secondary small">Associate with Sermon</label>
+                    <select class="form-select form-glass" @bind="_noteSermonId">
+                        <option value="0">-- General Notes (No Association) --</option>
+                        @foreach (var s in AppState.Sermons)
+                        {
+                            <option value="@s.Id">@s.Title (@s.DateText)</option>
+                        }
+                    </select>
+                </div>
+
+                <!-- Text Notepad -->
+                <div class="mb-3">
+                    <textarea class="notes-textarea" 
+                              placeholder="Type your notes here during the Sunday service... Key takeaways, scripture readings, and personal reflections." 
+                              disabled="@(AppState.CurrentUser == null)"
+                              @bind="_currentNoteText" @bind:event="oninput"></textarea>
+                </div>
+            </div>
+
+            <!-- Notes Footer Actions -->
+            @if (AppState.CurrentUser != null)
+            {
+                <div>
+                    <div class="d-flex justify-content-between align-items-center gap-2 flex-wrap mb-4">
+                        <button class="btn btn-premium-secondary btn-sm" @onclick="ExportNotesMock">
+                            <i class="bi bi-share"></i> Share / Email Notes
+                        </button>
+                        
+                        <button class="btn btn-premium btn-sm" @onclick="SaveNote">
+                            <i class="bi bi-file-earmark-check"></i> Save Note
+                        </button>
+                    </div>
+
+                    <!-- Notes History list -->
+                    <h6 class="text-white small fw-bold mb-2">Saved Notes History</h6>
+                    <div class="d-flex flex-column gap-2" style="max-height: 150px; overflow-y: auto;">
+                        @if (AppState.UserNotes.Count == 0)
+                        {
+                            <span class="text-muted small italic">No saved sermon notes found. Write above and click Save.</span>
+                        }
+                        else
+                        {
+                            @foreach (var note in AppState.UserNotes)
+                            {
+                                var sermon = AppState.Sermons.FirstOrDefault(s => s.Id == note.Key);
+                                <div class="d-flex justify-content-between align-items-center p-2 rounded bg-dark bg-opacity-20 border border-secondary border-opacity-5">
+                                    <div class="text-truncate flex-grow-1" style="max-width: 70%;">
+                                        <span class="text-white small fw-bold">@(sermon?.Title ?? "General Notes")</span>
+                                        <span class="text-muted d-block" style="font-size: 0.7rem; text-overflow: ellipsis; overflow: hidden; white-space: nowrap;">@note.Value</span>
+                                    </div>
+                                    <div class="d-flex gap-1">
+                                        <button class="btn btn-sm btn-link text-primary p-0" title="Edit" @onclick="() => LoadNote(note.Key)"><i class="bi bi-pencil-square"></i></button>
+                                        <button class="btn btn-sm btn-link text-danger p-0" title="Delete" @onclick="() => DeleteNote(note.Key)"><i class="bi bi-trash"></i></button>
+                                    </div>
+                                </div>
+                            }
+                        }
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+

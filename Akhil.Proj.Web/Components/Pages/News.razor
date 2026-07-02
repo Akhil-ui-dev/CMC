@@ -1,0 +1,312 @@
+@page "/news"
+
+<PageTitle>CHRIST MIRACLE CHURCH - News & Announcements</PageTitle>
+
+<div class="row g-4 justify-content-center">
+    
+    <!-- Feed Header / Filter Area -->
+    <div class="col-md-9 col-lg-8 d-flex justify-content-between align-items-center flex-wrap gap-3 mb-2">
+        <div>
+            <h2 class="font-heading text-white fw-bold m-0">Church Feed</h2>
+            <p class="text-secondary small m-0">Stay updated with our latest announcements, sermon digests, and testimonies.</p>
+        </div>
+        
+        <!-- Create post button (public) -->
+        <button class="btn btn-premium btn-sm" @onclick="OpenCreatePostModal">
+            <i class="bi bi-pencil-square"></i> Create Post
+        </button>
+    </div>
+
+    <!-- Category Tabs -->
+    <div class="col-md-9 col-lg-8">
+        <div class="glass-tab-container">
+            <button class="glass-tab @(_selectedCategory == "All" ? "active" : "")" @onclick='() => FilterFeed("All")'>All Posts</button>
+            <button class="glass-tab @(_selectedCategory == "Announcement" ? "active" : "")" @onclick='() => FilterFeed("Announcement")'>Announcements</button>
+            <button class="glass-tab @(_selectedCategory == "Sermon" ? "active" : "")" @onclick='() => FilterFeed("Sermon")'>Sermons</button>
+            <button class="glass-tab @(_selectedCategory == "Testimony" ? "active" : "")" @onclick='() => FilterFeed("Testimony")'>Testimonies</button>
+        </div>
+    </div>
+
+    <!-- Feed Cards -->
+    <div class="col-md-9 col-lg-8">
+        <div class="d-flex flex-column gap-4">
+            @if (GetFilteredPosts().Count == 0)
+            {
+                <div class="glass-panel text-center py-5">
+                    <i class="bi bi-journal-x text-muted fs-1 mb-2 d-block"></i>
+                    <h5 class="text-white fw-bold">No Posts Found</h5>
+                    <p class="text-secondary small m-0">No updates are currently categorised under this section.</p>
+                </div>
+            }
+            else
+            {
+                @foreach (var post in GetFilteredPosts())
+                {
+                    <div class="glass-card overflow-hidden p-0 position-relative">
+                        <!-- Post Featured Image -->
+                        <div class="ratio ratio-21x9 overflow-hidden position-relative" style="max-height: 250px; cursor: pointer;" @onclick="() => OpenPostDetails(post)">
+                            <img src="@post.ImageUrl" class="img-fluid object-fit-cover w-100" style="transition: transform 0.4s ease;" alt="Post featured image" />
+                            <div class="position-absolute top-0 start-0 w-100 h-100 bg-gradient" style="background: linear-gradient(to bottom, rgba(0,0,0,0.4) 0%, transparent 60%, rgba(10,8,16,0.85) 100%);"></div>
+                            
+                            <!-- Category Badge -->
+                            <div class="position-absolute top-0 start-0 p-3" style="z-index: 2;">
+                                <span class="badge-church @GetCategoryBadgeClass(post.Category)">
+                                    <i class="@GetCategoryIcon(post.Category)"></i> @post.Category
+                                </span>
+                            </div>
+
+                            <!-- Action Buttons -->
+                            <div class="position-absolute top-0 end-0 p-3 d-flex gap-2" style="z-index: 5;">
+                                @if (AppState.ActiveRole == "Admin" || (AppState.CurrentUser != null && post.Author == AppState.CurrentUser.Name))
+                                {
+                                    <button class="btn btn-sm btn-dark bg-opacity-70 border border-secondary border-opacity-30 rounded-circle p-2 d-flex align-items-center justify-content-center text-primary" style="width: 32px; height: 32px;" title="Edit Post" @onclick="() => OpenEditPostModal(post)" @onclick:stopPropagation="true">
+                                        <i class="bi bi-pencil"></i>
+                                    </button>
+                                    <button class="btn btn-sm btn-dark bg-opacity-70 border border-secondary border-opacity-30 rounded-circle p-2 d-flex align-items-center justify-content-center text-danger" style="width: 32px; height: 32px;" title="Delete Post" @onclick="() => HandleDeletePost(post)" @onclick:stopPropagation="true">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                }
+                            </div>
+                        </div>
+
+                        <!-- Post Body Brief -->
+                        <div class="p-4">
+                            <span class="text-light small d-flex align-items-center gap-2 mb-2">
+                                <i class="bi bi-person"></i> @post.Author
+                                <span>•</span>
+                                <i class="bi bi-calendar3"></i> @post.PublishedDate.ToString("MMMM dd, yyyy")
+                            </span>
+
+                            <h3 class="font-heading text-white fw-bold h4 mb-2 hover-title" style="cursor: pointer;" @onclick="() => OpenPostDetails(post)">
+                                @post.Title
+                            </h3>
+                            
+                            <p class="text-secondary small line-clamp-3 mb-4">
+                                @GetExcerpt(post.Content)
+                            </p>
+
+                            <!-- Interactive Card Footer -->
+                            <div class="d-flex justify-content-between align-items-center border-top border-secondary border-opacity-10 pt-3">
+                                <div class="d-flex gap-3">
+                                    <button class="btn btn-sm btn-link p-0 text-decoration-none d-flex align-items-center gap-1 @(IsLiked(post) ? "text-danger" : "text-secondary")" @onclick="() => ToggleLike(post)">
+                                        <i class="bi @(IsLiked(post) ? "bi-heart-fill btn-prayer-active" : "bi-heart") fs-5"></i>
+                                        <span class="small">@post.Likes.Count</span>
+                                    </button>
+                                    
+                                    <button class="btn btn-sm btn-link p-0 text-decoration-none text-secondary d-flex align-items-center gap-1" @onclick="() => OpenPostDetails(post)">
+                                        <i class="bi bi-chat-text fs-5"></i>
+                                        <span class="small">@post.Comments.Count</span>
+                                    </button>
+                                </div>
+
+                                <button class="btn btn-sm btn-premium-secondary py-1 px-3" @onclick="() => OpenPostDetails(post)">
+                                    Read Full Post
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                }
+            }
+        </div>
+    </div>
+</div>
+
+<!-- MODAL: FULL POST DETAILS -->
+@if (_selectedPost != null)
+{
+    <div class="modal-backdrop fade show" style="background: rgba(0,0,0,0.85); backdrop-filter: blur(8px);"></div>
+    <div class="modal show d-block" tabindex="-1" style="z-index: 1050; overflow-y: auto;">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content glass-panel border border-secondary border-opacity-20 text-start p-0 overflow-hidden" style="background: var(--bg-secondary);">
+                
+                <!-- Modal Header Banner -->
+                <div class="ratio ratio-21x9 position-relative" style="max-height: 300px;">
+                    <img src="@_selectedPost.ImageUrl" class="img-fluid object-fit-cover w-100" alt="Full post visual banner" />
+                    <div class="position-absolute top-0 start-0 w-100 h-100 bg-gradient" style="background: linear-gradient(to bottom, transparent, rgba(10,8,16,0.95));"></div>
+                    
+                    <div class="position-absolute top-0 end-0 m-3 d-flex gap-2 align-items-center" style="z-index: 10;">
+                        @if (AppState.ActiveRole == "Admin" || (AppState.CurrentUser != null && _selectedPost.Author == AppState.CurrentUser.Name))
+                        {
+                            <button class="btn btn-sm btn-dark bg-opacity-70 border border-secondary border-opacity-30 rounded-circle p-2 d-flex align-items-center justify-content-center text-primary" style="width: 32px; height: 32px;" title="Edit Post" @onclick="() => { OpenEditPostModal(_selectedPost); ClosePostDetails(); }">
+                                <i class="bi bi-pencil"></i>
+                            </button>
+                            <button class="btn btn-sm btn-dark bg-opacity-70 border border-secondary border-opacity-30 rounded-circle p-2 d-flex align-items-center justify-content-center text-danger" style="width: 32px; height: 32px;" title="Delete Post" @onclick="() => HandleDeletePost(_selectedPost)">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        }
+                        <button type="button" class="btn-close btn-close-white p-2 bg-dark bg-opacity-50 rounded-circle" aria-label="Close" @onclick="ClosePostDetails"></button>
+                    </div>
+                    
+                    <div class="position-absolute bottom-0 start-0 p-4 w-100">
+                        <span class="badge-church @GetCategoryBadgeClass(_selectedPost.Category) mb-2">
+                            <i class="@GetCategoryIcon(_selectedPost.Category)"></i> @_selectedPost.Category
+                        </span>
+                        <h2 class="font-heading text-white fw-bold m-0 text-shadow">@_selectedPost.Title</h2>
+                    </div>
+                </div>
+
+                <!-- Modal Body -->
+                <div class="p-4" style="max-height: 60vh; overflow-y: auto;">
+                    <div class="d-flex align-items-center gap-2 mb-4 text-light small">
+                        <i class="bi bi-person-circle"></i> Published by <strong class="text-white">@_selectedPost.Author</strong> 
+                        <span>•</span> 
+                        <i class="bi bi-clock"></i> @_selectedPost.PublishedDate.ToString("MMMM dd, yyyy")
+                    </div>
+
+                    <!-- Post Body Text Content -->
+                    <div class="text-light fs-6 mb-5" style="line-height: 1.8; white-space: pre-line;">
+                        @_selectedPost.Content
+                    </div>
+
+                    <!-- Post Actions Toolbar -->
+                    <div class="d-flex align-items-center gap-4 py-3 border-top border-bottom border-secondary border-opacity-10 mb-4">
+                        <button class="btn btn-sm btn-link p-0 text-decoration-none d-flex align-items-center gap-2 @(IsLiked(_selectedPost) ? "text-danger" : "text-secondary")" @onclick="() => ToggleLike(_selectedPost)">
+                            <i class="bi @(IsLiked(_selectedPost) ? "bi-heart-fill btn-prayer-active" : "bi-heart") fs-4"></i>
+                            <span class="fw-bold">@_selectedPost.Likes.Count Likes</span>
+                        </button>
+                        
+                        <div class="text-secondary small d-flex align-items-center gap-2">
+                            <i class="bi bi-chat-text fs-4"></i>
+                            <span class="fw-bold">@_selectedPost.Comments.Count Comments</span>
+                        </div>
+                    </div>
+
+                    <!-- Comments Section -->
+                    <h5 class="font-heading text-white fw-bold mb-3">Community Comments</h5>
+
+                    <!-- Write Comment Box -->
+                    @if (AppState.CurrentUser == null)
+                    {
+                        <div class="alert alert-info py-2 small mb-4" role="alert">
+                            <i class="bi bi-info-circle-fill"></i> Please <a href="auth" class="fw-bold text-decoration-underline text-info">sign in</a> to participate and comment on this post.
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="d-flex gap-3 mb-4 align-items-start">
+                            <div class="avatar-circle bg-primary text-white d-flex align-items-center justify-content-center fw-bold" style="width: 40px; height: 40px; border-radius: 50%; flex-shrink: 0;">
+                                @AppState.CurrentUser.Name[0].ToString().ToUpper()
+                            </div>
+                            <div class="flex-grow-1">
+                                <textarea class="form-control form-glass small" rows="2" placeholder="Write a comment..." @bind="_commentInput"></textarea>
+                                <div class="text-end mt-2">
+                                    <button class="btn btn-premium py-1 px-3 btn-sm" @onclick="SubmitComment">Post Comment</button>
+                                </div>
+                            </div>
+                        </div>
+                    }
+
+                    <!-- Comments List -->
+                    <div class="d-flex flex-column gap-3 mb-2">
+                        @if (_selectedPost.Comments.Count == 0)
+                        {
+                            <p class="text-muted small italic text-center py-2">No comments yet. Be the first to share an encouraging note!</p>
+                        }
+                        else
+                        {
+                            @foreach (var comment in _selectedPost.Comments.OrderByDescending(c => c.Timestamp))
+                            {
+                                <div class="d-flex gap-3 p-3 rounded" style="background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.04);">
+                                    <div class="avatar-circle bg-secondary text-white d-flex align-items-center justify-content-center fw-bold" style="width: 35px; height: 35px; border-radius: 50%; flex-shrink: 0; font-size: 0.85rem;">
+                                        @comment.AuthorName[0].ToString().ToUpper()
+                                    </div>
+                                    <div class="flex-grow-1">
+                                        <div class="d-flex justify-content-between align-items-center mb-1">
+                                            <strong class="text-white small">@comment.AuthorName</strong>
+                                            <span class="text-muted" style="font-size: 0.7rem;">@GetTimeAgo(comment.Timestamp)</span>
+                                        </div>
+                                        <p class="m-0 text-secondary small" style="line-height: 1.4;">@comment.Content</p>
+                                    </div>
+                                </div>
+                            }
+                        }
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+<!-- MODAL: DYNAMIC CREATE / EDIT POST -->
+@if (_showCreateModal)
+{
+    <div class="modal-backdrop fade show" style="background: rgba(0,0,0,0.85); backdrop-filter: blur(8px);"></div>
+    <div class="modal show d-block" tabindex="-1" style="z-index: 1050; overflow-y: auto;">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content glass-panel border border-secondary border-opacity-20 text-start p-4" style="background: var(--bg-secondary);">
+                
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h4 class="font-heading text-white fw-bold m-0">
+                        <i class="bi @(_editingPost == null ? "bi-file-earmark-plus text-primary" : "bi-pencil-square text-primary")"></i>
+                        @(_editingPost == null ? "Create Church Feed Post" : "Edit Church Feed Post")
+                    </h4>
+                    <button type="button" class="btn-close btn-close-white" aria-label="Close" @onclick="CloseCreatePostModal"></button>
+                </div>
+
+                <form @onsubmit="SubmitForm">
+                    <div class="mb-3">
+                        <label class="form-label text-secondary small">Author Name</label>
+                        @if (AppState.CurrentUser != null)
+                        {
+                            <input type="text" class="form-control form-glass text-muted" readonly disabled @bind="_newPostAuthor" />
+                        }
+                        else
+                        {
+                            <input type="text" class="form-control form-glass" required @bind="_newPostAuthor" placeholder="Your name (e.g. Brother Thomas)" />
+                        }
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label text-secondary small">Post Title</label>
+                        <input type="text" class="form-control form-glass" required @bind="_newPostTitle" placeholder="Enter headline..." />
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label text-secondary small">Category</label>
+                        <select class="form-select form-glass" required @bind="_newPostCategory">
+                            <option value="Announcement">Announcement</option>
+                            <option value="Sermon">Sermon Digest</option>
+                            <option value="Testimony">Testimony</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label text-secondary small">Featured Image</label>
+                        <div class="row g-2 align-items-center">
+                            <div class="col-sm-6">
+                                <InputFile class="form-control form-glass" OnChange="HandleImageUpload" accept=".jpg,.jpeg,.png,.gif" />
+                            </div>
+                            <div class="col-sm-6">
+                                <input type="text" class="form-control form-glass" @bind="_newPostImageUrl" placeholder="Or enter image URL..." />
+                            </div>
+                        </div>
+                        @if (_isUploading)
+                        {
+                            <span class="text-info small mt-1 d-block"><i class="bi bi-hourglass-split"></i> Uploading image...</span>
+                        }
+                        else if (!string.IsNullOrEmpty(_newPostImageUrl))
+                        {
+                            <div class="mt-2 text-center position-relative d-inline-block">
+                                <img src="@_newPostImageUrl" class="rounded border border-secondary border-opacity-20" style="max-height: 100px; max-width: 100%; object-fit: cover;" />
+                                <button type="button" class="btn btn-sm btn-danger position-absolute top-0 end-0 m-1 rounded-circle p-1 d-flex align-items-center justify-content-center" style="width: 20px; height: 20px; font-size: 0.7rem; line-height: 1;" @onclick="ClearUploadedImage">×</button>
+                            </div>
+                        }
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label text-secondary small">Content Body</label>
+                        <textarea class="form-control form-glass" rows="6" required @bind="_newPostContent" placeholder="Write full article here..."></textarea>
+                    </div>
+
+                    <div class="d-flex justify-content-end gap-2 mt-4">
+                        <button type="button" class="btn btn-premium-secondary" @onclick="CloseCreatePostModal">Cancel</button>
+                        <button type="submit" class="btn btn-premium">@(_editingPost == null ? "Publish Immediately" : "Save Changes")</button>
+                    </div>
+                </form>
+
+            </div>
+        </div>
+    </div>
+}
+

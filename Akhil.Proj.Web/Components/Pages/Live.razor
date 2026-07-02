@@ -1,0 +1,158 @@
+@page "/live"
+@using Akhil.Proj.Web.Services
+@implements IDisposable
+@inject AppStateService AppState
+@inject IJSRuntime JS
+
+<PageTitle>CHRIST MIRACLE CHURCH - Live Stream</PageTitle>
+
+<div class="container-fluid py-4">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12 d-flex justify-content-between align-items-center flex-wrap gap-3">
+            <div>
+                <h2 class="font-heading text-white fw-bold m-0"><i class="bi bi-broadcast text-danger animate-pulse"></i> Live Stream Center</h2>
+                <p class="text-secondary small m-0">Join our dynamic online congregation in worship, prayer, and real-time community fellowship.</p>
+            </div>
+            <a href="https://www.youtube.com/@@gvmbibletv" target="_blank" class="btn btn-premium-secondary btn-sm d-flex align-items-center gap-2 text-danger border border-secondary border-opacity-20 px-3 py-2 rounded-pill" style="transition: transform 0.2s; display: inline-flex;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
+                <span class="small fw-bold text-white">Watch on YouTube</span>
+            </a>
+        </div>
+    </div>
+
+    <!-- Live Grid -->
+    <div class="live-grid">
+        
+        <!-- Left: Video & Reactions -->
+        <div>
+            <div class="glass-panel p-0 video-section border border-secondary border-opacity-10 shadow-lg">
+                <!-- Tabs / Controls Bar -->
+                <div class="d-flex align-items-center justify-content-between px-3 py-2 border-bottom border-secondary border-opacity-10 bg-dark bg-opacity-30">
+                    <div class="d-flex align-items-center gap-2">
+                        @if (_activeTab == "live")
+                        {
+                            <span class="badge bg-danger rounded-pill px-2 py-1 small animate-pulse"><i class="bi bi-circle-fill" style="font-size: 0.5rem; vertical-align: middle;"></i> LIVE STREAM</span>
+                        }
+                        else
+                        {
+                            <span class="badge bg-secondary rounded-pill px-2 py-1 small"><i class="bi bi-collection-play-fill" style="font-size: 0.5rem; vertical-align: middle;"></i> ARCHIVE</span>
+                        }
+                        <span class="text-white small fw-semibold">GVM Bible TV</span>
+                    </div>
+                    <div class="btn-group" role="group">
+                        <button type="button" class="btn btn-sm @(_activeTab == "live" ? "btn-danger" : "btn-outline-secondary text-white")" style="font-size: 0.75rem;" @onclick='() => SwitchTab("live")'>
+                            <i class="bi bi-broadcast me-1"></i> Live Stream
+                        </button>
+                        <button type="button" class="btn btn-sm @(_activeTab == "archive" ? "btn-danger" : "btn-outline-secondary text-white")" style="font-size: 0.75rem;" @onclick='() => SwitchTab("archive")'>
+                            <i class="bi bi-collection-play me-1"></i> Latest Sermons
+                        </button>
+                    </div>
+                </div>
+
+                <div class="video-ratio-box">
+                    <!-- Embed Youtube Video -->
+                    <iframe src="@_iframeSrc" 
+                            title="GVM Bible TV Live Stream" 
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
+                            allowfullscreen></iframe>
+
+                    <!-- Floating Reactions Overlay -->
+                    <div class="reactions-overlay">
+                        @foreach (var r in _activeReactions)
+                        {
+                            <span @key="r.Id" class="floating-reaction animate-float-reaction" style="left: @(r.LeftPercent)%; --drift-x: @(r.DriftX)px;">
+                                @r.Emoji
+                            </span>
+                        }
+                    </div>
+                </div>
+
+                <!-- Reactions Tray -->
+                <div class="reactions-tray d-flex justify-content-between align-items-center">
+                    <span class="text-secondary small fw-semibold"><i class="bi bi-chat-heart text-primary me-1"></i> Send Reaction:</span>
+                    <div class="d-flex gap-2">
+                        <button class="btn-reaction" title="Love" @onclick='() => SendReaction("❤️")'>❤️</button>
+                        <button class="btn-reaction" title="Amen" @onclick='() => SendReaction("🙏")'>🙏</button>
+                        <button class="btn-reaction" title="Like" @onclick='() => SendReaction("👍")'>👍</button>
+                        <button class="btn-reaction" title="Fire" @onclick='() => SendReaction("🔥")'>🔥</button>
+                        <button class="btn-reaction" title="Praise" @onclick='() => SendReaction("🙌")'>🙌</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sermon Context Information -->
+            <div class="glass-panel mt-4">
+                <h4 class="text-white fw-bold mb-2">Sunday Worship & Word</h4>
+                <div class="d-flex align-items-center gap-3 flex-wrap mb-3 text-secondary small">
+                    <span><i class="bi bi-person-fill text-primary"></i> Speaker: Pastor David Miller</span>
+                    <span><i class="bi bi-calendar-check text-primary"></i> Date: Today</span>
+                    <span><i class="bi bi-people-fill text-primary"></i> Viewers Online: @_mockViewerCount</span>
+                </div>
+                <p class="text-light small m-0" style="line-height: 1.6;">
+                    Welcome to our online sanctuary! We are glad you have tuned in. Join us in singing praises, listening to the Word, and praying for one another in the chat sidebar. Toggle the Mock Live button to simulate a live stream broadcast if we're off-air.
+                </p>
+            </div>
+        </div>
+
+        <!-- Right: Real-Time Chat -->
+        <div class="glass-panel chat-section border border-secondary border-opacity-10 shadow-lg p-3">
+            <div class="d-flex justify-content-between align-items-center border-bottom border-secondary border-opacity-10 pb-3 mb-3">
+                <h5 class="text-white fw-bold m-0"><i class="bi bi-chat-dots-fill text-primary me-2"></i> Live Chat</h5>
+                <span class="badge bg-danger rounded-pill small animate-pulse">Live</span>
+            </div>
+
+            <!-- Scrollable Chat Messages -->
+            <div class="chat-messages-container pr-2" id="chat-box">
+                @if (AppState.ChatMessages.Count == 0)
+                {
+                    <div class="text-center text-muted my-auto py-5">
+                        <i class="bi bi-chat-left-dots fs-1 mb-2 d-block"></i>
+                        <span class="small">Welcome! Be the first to say hello.</span>
+                    </div>
+                }
+                else
+                {
+                    @foreach (var msg in AppState.ChatMessages)
+                    {
+                        <div class="chat-msg-card @(msg.UserRole == "Admin" ? "admin-msg" : "")">
+                            <div class="chat-msg-header">
+                                <span class="chat-msg-author @(msg.UserRole == "Admin" ? "text-warning" : "text-primary")">
+                                    @msg.AuthorName
+                                    @if (msg.UserRole == "Admin")
+                                    {
+                                        <span class="badge bg-dark border border-warning text-warning small ms-1" style="font-size: 0.55rem;">Admin</span>
+                                    }
+                                </span>
+                                <span class="chat-msg-time">@msg.Timestamp.ToString("h:mm tt")</span>
+                            </div>
+                            <div class="chat-msg-body">
+                                @msg.MessageText
+                            </div>
+                        </div>
+                    }
+                }
+            </div>
+
+            <!-- User Chat Form -->
+            <div class="chat-input-bar pt-3 mt-3">
+                <!-- Nickname field for guests -->
+                @if (AppState.CurrentUser == null)
+                {
+                    <div class="mb-2">
+                        <div class="input-group input-group-sm">
+                            <span class="input-group-text bg-dark border border-secondary text-secondary small" style="font-size:0.75rem;">Guest Nickname</span>
+                            <input type="text" class="form-control form-glass form-control-sm small" placeholder="Enter name..." @bind="_guestNickname" maxlength="20" />
+                        </div>
+                    </div>
+                }
+
+                <!-- Message input -->
+                <form @onsubmit="SendChatMessage" class="input-group">
+                    <input type="text" class="form-control form-glass form-control-sm" placeholder="Type a message..." @bind="_messageText" maxlength="150" required />
+                    <button class="btn btn-premium btn-sm" type="submit"><i class="bi bi-send-fill"></i></button>
+                </form>
+            </div>
+        </div>
+
+    </div>
+</div>

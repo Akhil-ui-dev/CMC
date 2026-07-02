@@ -1,0 +1,391 @@
+@page "/"
+
+<PageTitle>CHRIST MIRACLE CHURCH - Home</PageTitle>
+
+<div class="row g-4">
+    <!-- Hero Banner with Welcome Message -->
+    <div class="col-12">
+        <div class="glass-panel text-center position-relative overflow-hidden py-5 px-4" style="background: linear-gradient(135deg, rgba(140, 70, 255, 0.25), rgba(255, 176, 58, 0.05)), var(--panel-bg); border-color: rgba(140, 70, 255, 0.2);">
+
+            <div class="position-absolute" style="top: -50px; right: -50px; width: 200px; height: 200px; background: radial-gradient(circle, var(--primary-glow) 0%, transparent 70%); z-index: 0;"></div>
+            
+            <i class="bi bi-church text-primary fs-1 mb-3 d-block"></i>
+            @if (AppState.CurrentUser != null)
+            {
+                <h1 class="font-heading display-5 fw-extrabold text-white mb-2">Welcome Back, @AppState.CurrentUser.Name!</h1>
+                <p class="text-secondary mx-auto" style="max-width: 600px;">We're glad to have you with us today. Check out your personalized feed, sign up for events, or take notes during Sunday's sermon.</p>
+                <div class="mt-3">
+                    <span class="badge bg-primary px-3 py-2">Member since @AppState.CurrentUser.JoinedDate.ToString("MMMM yyyy")</span>
+                </div>
+            }
+            else
+            {
+                <h1 class="font-heading display-5 fw-extrabold text-white mb-2">Welcome to Christ Miracle Church</h1>
+                <p class="text-secondary mx-auto" style="max-width: 600px;">A modern congregation rooted in grace, growing in faith, and branching out in service. Join us this week!</p>
+                <div class="mt-4 d-flex justify-content-center gap-2">
+                    <a href="register" class="btn btn-premium">Get Started</a>
+                    <button class="btn btn-premium-secondary" @onclick="ScrollToServiceTimes">Service Times</button>
+                </div>
+            }
+        </div>
+    </div>
+
+    <!-- Quick Action Cards -->
+    <div class="col-md-4">
+        <div class="action-card glass-card h-100" @onclick='() => SetActiveTab("times")'>
+            <i class="bi bi-calendar3-event text-primary fs-2 mb-2 d-block"></i>
+            <h5 class="fw-bold text-white">Service Times</h5>
+            <p class="text-light small m-0">View our weekly gatherings and get map directions.</p>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="action-card glass-card h-100" @onclick='() => SetActiveTab("about")'>
+            <i class="bi bi-info-circle text-accent fs-2 mb-2 d-block"></i>
+            <h5 class="fw-bold text-white">About the Church</h5>
+            <p class="text-light small m-0">Learn about our history, core mission, and vision.</p>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="action-card glass-card h-100" @onclick='() => SetActiveTab("contact")'>
+            <i class="bi bi-envelope text-success fs-2 mb-2 d-block"></i>
+            <h5 class="fw-bold text-white">Contact & Support</h5>
+            <p class="text-light small m-0">Reach out to our leadership or submit questions.</p>
+        </div>
+    </div>
+
+    <!-- Interactive Navigation Tabs -->
+    <div class="col-12 mt-5">
+        <div class="glass-tab-container">
+            @if (AppState.CurrentUser != null)
+            {
+                <button class="glass-tab @(_activeTab == "dashboard" ? "active" : "")" @onclick='() => SetActiveTab("dashboard")'>
+                    <i class="bi bi-speedometer2 me-1"></i> My Dashboard
+                </button>
+            }
+            <button class="glass-tab @(_activeTab == "times" ? "active" : "")" @onclick='() => SetActiveTab("times")'>
+                <i class="bi bi-clock me-1"></i> Service Times & Location
+            </button>
+            <button class="glass-tab @(_activeTab == "about" ? "active" : "")" @onclick='() => SetActiveTab("about")'>
+                <i class="bi bi-book me-1"></i> Mission & Leadership
+            </button>
+            <button class="glass-tab @(_activeTab == "contact" ? "active" : "")" @onclick='() => SetActiveTab("contact")'>
+                <i class="bi bi-telephone me-1"></i> Get In Touch
+            </button>
+        </div>
+    </div>
+
+    <!-- TAB: MY PERSONAL DASHBOARD -->
+    @if (_activeTab == "dashboard" && AppState.CurrentUser != null)
+    {
+        <div class="col-lg-8">
+            <div class="glass-panel h-100">
+                <h3 class="font-heading text-white fw-bold mb-4 d-flex align-items-center gap-2">
+                    <i class="bi bi-person-badge text-primary"></i> My Registered Profile
+                </h3>
+                
+                <div class="row g-3">
+                    <div class="col-sm-6">
+                        <div class="p-3 rounded bg-dark bg-opacity-20 border border-secondary border-opacity-10">
+                            <span class="d-block small text-secondary">Full Name</span>
+                            <span class="text-white fw-semibold">@AppState.CurrentUser.Name</span>
+                        </div>
+                    </div>
+                    <div class="col-sm-6">
+                        <div class="p-3 rounded bg-dark bg-opacity-20 border border-secondary border-opacity-10">
+                            <span class="d-block small text-secondary">Email Address</span>
+                            <span class="text-white fw-semibold text-break">@AppState.CurrentUser.Email</span>
+                        </div>
+                    </div>
+                    <div class="col-sm-6">
+                        <div class="p-3 rounded bg-dark bg-opacity-20 border border-secondary border-opacity-10">
+                            <span class="d-block small text-secondary">Phone Number</span>
+                            <span class="text-white fw-semibold">@AppState.CurrentUser.Phone</span>
+                        </div>
+                    </div>
+                    <div class="col-sm-6">
+                        <div class="p-3 rounded bg-dark bg-opacity-20 border border-secondary border-opacity-10">
+                            <span class="d-block small text-secondary">Physical Address</span>
+                            <span class="text-white fw-semibold">@(string.IsNullOrWhiteSpace(AppState.CurrentUser.Address) ? "Not Provided" : AppState.CurrentUser.Address)</span>
+                        </div>
+                    </div>
+                    <div class="col-sm-6">
+                        <div class="p-3 rounded bg-dark bg-opacity-20 border border-secondary border-opacity-10">
+                            <span class="d-block small text-secondary">Family Details</span>
+                            <span class="text-white fw-semibold">@AppState.CurrentUser.FamilyMembers</span>
+                        </div>
+                    </div>
+                    <div class="col-sm-6">
+                        <div class="p-3 rounded bg-dark bg-opacity-20 border border-secondary border-opacity-10">
+                            <span class="d-block small text-secondary">Discovery Source</span>
+                            <span class="text-white fw-semibold">@AppState.CurrentUser.HowHeard</span>
+                        </div>
+                    </div>
+                    <div class="col-12">
+                        <div class="p-3 rounded bg-dark bg-opacity-20 border border-secondary border-opacity-10">
+                            <span class="d-block small text-secondary mb-2">My Selected Ministries & Interests</span>
+                            <div class="d-flex flex-wrap gap-2">
+                                @if (AppState.CurrentUser.Interests == null || AppState.CurrentUser.Interests.Count == 0)
+                                {
+                                    <span class="text-muted small">No ministries selected yet.</span>
+                                }
+                                else
+                                {
+                                    @foreach (var interest in AppState.CurrentUser.Interests)
+                                    {
+                                        <span class="badge bg-primary bg-opacity-20 text-primary">@interest</span>
+                                    }
+                                }
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="glass-panel h-100 d-flex flex-column justify-content-between">
+                <div>
+                    <h3 class="font-heading text-white fw-bold mb-3 d-flex align-items-center gap-2">
+                        <i class="bi bi-lightning-charge text-accent"></i> Quick Action Console
+                    </h3>
+                    <p class="text-secondary small mb-4">Access key features to participate in fellowship activities.</p>
+                    
+                    <div class="d-flex flex-column gap-2">
+                        <a href="news" class="btn btn-premium-secondary text-start"><i class="bi bi-journal-text me-2"></i> Church News Feed</a>
+                        <a href="events" class="btn btn-premium-secondary text-start"><i class="bi bi-calendar-event me-2"></i> Events & RSVP</a>
+                        <a href="prayer" class="btn btn-premium-secondary text-start"><i class="bi bi-heart me-2"></i> Prayer Request Wall</a>
+                        <a href="sermons" class="btn btn-premium-secondary text-start"><i class="bi bi-headphones me-2"></i> Sermon Podcast Notes</a>
+                    </div>
+                </div>
+
+                <div class="pt-4 mt-4">
+                    <div class="text-center p-3 rounded bg-primary bg-opacity-10 border border-primary border-opacity-20">
+                        <span class="d-block small text-secondary">Congregation Joined Date</span>
+                        <span class="text-primary fw-bold">@AppState.CurrentUser.JoinedDate.ToString("MMMM dd, yyyy")</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+
+    <!-- TAB: SERVICE TIMES & LOCATION -->
+    @if (_activeTab == "times")
+    {
+        <div class="col-lg-6">
+            <div class="glass-panel h-100">
+                <h3 class="font-heading text-white fw-bold mb-4 d-flex align-items-center gap-2">
+                    <i class="bi bi-clock-history text-primary"></i> Service Times
+                </h3>
+                
+                <div class="d-flex flex-column gap-3">
+                    <div class="d-flex gap-3 align-items-start p-3 rounded bg-dark bg-opacity-20 border border-secondary border-opacity-10">
+                        <div class="badge bg-primary text-white p-2 rounded">SUN</div>
+                        <div>
+                            <h6 class="m-0 text-white fw-bold">Sunday Worship Services</h6>
+                            <p class="text-secondary small m-0 mt-1">9:00 AM — Contemporary Worship & Kids Church</p>
+                            <p class="text-secondary small m-0">11:00 AM — Traditional Liturgy & Choir</p>
+                        </div>
+                    </div>
+
+                    <div class="d-flex gap-3 align-items-start p-3 rounded bg-dark bg-opacity-20 border border-secondary border-opacity-10">
+                        <div class="badge bg-accent text-dark p-2 rounded">WED</div>
+                        <div>
+                            <h6 class="m-0 text-white fw-bold">Midweek Bible Study</h6>
+                            <p class="text-secondary small m-0 mt-1">7:00 PM — Interactive small group study and prayer in the Chapel.</p>
+                        </div>
+                    </div>
+
+                    <div class="d-flex gap-3 align-items-start p-3 rounded bg-dark bg-opacity-20 border border-secondary border-opacity-10">
+                        <div class="badge bg-info text-dark p-2 rounded">FRI</div>
+                        <div>
+                            <h6 class="m-0 text-white fw-bold">Youth Outreach Group</h6>
+                            <p class="text-secondary small m-0 mt-1">7:00 PM — Worship, games, and discussions for students (Grades 6-12).</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-6">
+            <div class="glass-panel h-100">
+                <h3 class="font-heading text-white fw-bold mb-3 d-flex align-items-center gap-2">
+                    <i class="bi bi-geo-alt text-primary"></i> Our Location
+                </h3>
+                <p class="text-secondary small mb-3">123 Miracle Boulevard, Miracle City, MC 56789. Tap below or search on your map application for directions.</p>
+                
+                <!-- Google Maps Embed Mockup (OpenStreetMap used for standard reliability) -->
+                <div class="rounded-3 overflow-hidden border border-secondary border-opacity-20 mb-3" style="height: 250px;">
+                    <iframe 
+                        width="100%" 
+                        height="100%" 
+                        frameborder="0" 
+                        scrolling="no" 
+                        marginheight="0" 
+                        marginwidth="0" 
+                        src="https://www.openstreetmap.org/export/embed.html?bbox=80.7834%2C16.5194%2C80.7874%2C16.5234&amp;layer=mapnik&amp;marker=16.521446214813565%2C80.78543049516232" 
+                        style="border: none; filter: invert(90%) hue-rotate(180deg) contrast(120%);">
+                    </iframe>
+                </div>
+                
+                <a href="https://maps.google.com/?q=16.521446214813565,80.78543049516232" target="_blank" class="btn btn-premium-secondary w-100 justify-content-center">
+                    <i class="bi bi-map"></i> Open in Google Maps
+                </a>
+            </div>
+        </div>
+    }
+
+    <!-- TAB: MISSION & LEADERSHIP -->
+    @if (_activeTab == "about")
+    {
+        <div class="col-12">
+            <div class="glass-panel">
+                <div class="row g-4 align-items-center">
+                    <div class="col-md-7">
+                        <h3 class="font-heading text-white fw-bold mb-3">Our Mission & Vision</h3>
+                        <p class="text-secondary">At Christ Miracle Church, we believe in a church that models the unconditional love of Christ. Our goal is to create a safe, warm, and engaging space where believers and seekers alike can experience deep spiritual growth.</p>
+                        
+                        <div class="mb-4">
+                            <span class="text-accent fw-bold d-block mb-1"><i class="bi bi-quote"></i> MISSION</span>
+                            <p class="text-light fs-5 italic">"To connect people to God and one another through grace, truth, and community service."</p>
+                        </div>
+                        
+                        <div>
+                            <span class="text-primary fw-bold d-block mb-1"><i class="bi bi-eye"></i> VISION</span>
+                            <p class="text-light">"A growing congregation that impacts families, heals broken relationships, and stands as a beacon of Hope in the community."</p>
+                        </div>
+                    </div>
+                    <div class="col-md-5 text-center">
+                        <img src="https://images.unsplash.com/photo-1478147427282-58a87a120781?auto=format&fit=crop&q=80&w=400" 
+                             class="img-fluid rounded-3 border border-secondary border-opacity-20" 
+                             alt="Stained Glass Sanctuary" />
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-12">
+            <div class="glass-panel">
+                <h3 class="font-heading text-white fw-bold mb-4 text-center">Meet Our Leadership Team</h3>
+                <div class="row g-4 justify-content-center">
+                    <!-- Pastor David -->
+                    <div class="col-md-4 col-sm-6 text-center">
+                        <div class="glass-card p-4">
+                            <div class="avatar-circle mx-auto bg-primary text-white d-flex align-items-center justify-content-center mb-3" style="width: 80px; height: 80px; border-radius: 50%; font-size: 2rem; font-weight: bold;">
+                                DM
+                            </div>
+                            <h5 class="text-white fw-bold m-0">Pastor David Miller</h5>
+                            <span class="text-accent small d-block mb-2">Lead Pastor</span>
+                            <p class="text-muted small">Pastor David founded Christ Miracle Church 15 years ago with a vision for organic, outreach-focused ministry.</p>
+                        </div>
+                    </div>
+
+                    <!-- Sarah Connor -->
+                    <div class="col-md-4 col-sm-6 text-center">
+                        <div class="glass-card p-4">
+                            <div class="avatar-circle mx-auto bg-success text-white d-flex align-items-center justify-content-center mb-3" style="width: 80px; height: 80px; border-radius: 50%; font-size: 2rem; font-weight: bold;">
+                                SC
+                            </div>
+                            <h5 class="text-white fw-bold m-0">Sarah Connor</h5>
+                            <span class="text-primary small d-block mb-2">Youth Director</span>
+                            <p class="text-muted small">Sarah leads our teenagers, organizing summer camps, worship nights, and local missions.</p>
+                        </div>
+                    </div>
+
+                    <!-- Choir Director -->
+                    <div class="col-md-4 col-sm-6 text-center">
+                        <div class="glass-card p-4">
+                            <div class="avatar-circle mx-auto bg-warning text-dark d-flex align-items-center justify-content-center mb-3" style="width: 80px; height: 80px; border-radius: 50%; font-size: 2rem; font-weight: bold;">
+                                EM
+                            </div>
+                            <h5 class="text-white fw-bold m-0">Emily Madison</h5>
+                            <span class="text-accent small d-block mb-2">Worship & Choir Leader</span>
+                            <p class="text-muted small">Emily coordinates our worship teams and directs the adult choir for traditional services.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+
+    <!-- TAB: CONTACT & SUPPORT -->
+    @if (_activeTab == "contact")
+    {
+        <div class="col-md-5">
+            <div class="glass-panel h-100">
+                <h3 class="font-heading text-white fw-bold mb-4">Contact Information</h3>
+                
+                <ul class="list-unstyled d-flex flex-column gap-3 text-secondary">
+                    <li class="d-flex align-items-center gap-3">
+                        <i class="bi bi-telephone text-primary fs-4"></i>
+                        <div>
+                            <span class="d-block small text-muted">Phone Number</span>
+                            <a href="tel:+918074140413" class="text-white fw-semibold">+91 8074140413</a>
+                        </div>
+                    </li>
+                    <li class="d-flex align-items-center gap-3">
+                        <i class="bi bi-envelope text-primary fs-4"></i>
+                        <div>
+                            <span class="d-block small text-muted">Email Address</span>
+                            <a href="mailto:jampanaakhil97@gmail.com" class="text-white fw-semibold">jampanaakhil97@gmail.com</a>
+                        </div>
+                    </li>
+                    <li class="d-flex align-items-center gap-3">
+                        <i class="bi bi-geo-alt text-primary fs-4"></i>
+                        <div>
+                            <span class="d-block small text-muted">Physical Location</span>
+                            <span class="text-white">CHRIST MIRACLE CHURCH ,VIJAYAWADA,A.P,INDIA -521102</span>
+                        </div>
+                    </li>
+                </ul>
+
+                <hr class="border-secondary border-opacity-20 my-4" />
+
+                <h6 class="text-white fw-bold mb-3">Connect on Social Media</h6>
+                <div class="d-flex gap-2">
+                    <a href="https://facebook.com" target="_blank" class="btn btn-dark rounded-circle d-flex align-items-center justify-content-center" style="width: 45px; height: 45px;"><i class="bi bi-facebook fs-5 text-white"></i></a>
+                    <a href="https://youtube.com" target="_blank" class="btn btn-dark rounded-circle d-flex align-items-center justify-content-center" style="width: 45px; height: 45px;"><i class="bi bi-youtube fs-5 text-white"></i></a>
+                    <a href="https://instagram.com" target="_blank" class="btn btn-dark rounded-circle d-flex align-items-center justify-content-center" style="width: 45px; height: 45px;"><i class="bi bi-instagram fs-5 text-white"></i></a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-7">
+            <div class="glass-panel h-100">
+                <h3 class="font-heading text-white fw-bold mb-4">Send us a Message</h3>
+                
+                @if (_formSubmitted)
+                {
+                    <div class="alert alert-success d-flex align-items-center gap-3" role="alert">
+                        <i class="bi bi-check-circle-fill fs-4"></i>
+                        <div>
+                            <h6 class="m-0 fw-bold">Message Sent Successfully!</h6>
+                            <span class="small">Thank you for writing. A member of our ministry team will get back to you shortly.</span>
+                        </div>
+                    </div>
+                    <button class="btn btn-premium-secondary mt-3" @onclick="ResetForm">Send Another Message</button>
+                }
+                else
+                {
+                    <form @onsubmit="SubmitForm">
+                        <div class="mb-3">
+                            <label class="form-label text-secondary small">Your Name</label>
+                            <input type="text" class="form-control form-glass" required @bind="_contactName" placeholder="Enter your full name" />
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label text-secondary small">Email Address</label>
+                            <input type="email" class="form-control form-glass" required @bind="_contactEmail" placeholder="name@example.com" />
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label text-secondary small">Message</label>
+                            <textarea class="form-control form-glass" rows="4" required @bind="_contactMessage" placeholder="How can we pray for you or support you?"></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-premium w-100">
+                            <i class="bi bi-send"></i> Submit Message
+                        </button>
+                    </form>
+                }
+            </div>
+        </div>
+    }
+</div>
+

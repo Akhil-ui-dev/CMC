@@ -1,0 +1,386 @@
+@page "/auth"
+@page "/register"
+
+<PageTitle>CHRIST MIRACLE CHURCH - Onboarding & Sign In</PageTitle>
+
+<div class="row justify-content-center">
+    <div class="col-md-8 col-lg-7">
+        <div class="glass-panel py-4 px-3 px-sm-4 shadow-lg">
+            
+            @if (AppState.CurrentUser != null)
+            {
+                <!-- MY PROFILE DASHBOARD (CRUD CONSOLE FOR AUTHENTICATED USERS) -->
+                @if (!_isEditingProfile)
+                {
+                    <!-- 1. READ / VIEW PROFILE DETAILS -->
+                    <div class="text-center mb-4">
+                        <i class="bi bi-person-badge text-primary fs-1 mb-2"></i>
+                        <h2 class="font-heading fw-bold text-white">My Profile Console</h2>
+                        <p class="text-muted small">Manage your membership credentials, contact info, and registration status.</p>
+                    </div>
+
+                    @if (_profileDeletedSuccess)
+                    {
+                        <div class="alert alert-success mb-3 py-2 small" role="alert">
+                            Your account has been deleted successfully. Redirecting you...
+                        </div>
+                    }
+
+                    <div class="mb-4 bg-dark bg-opacity-40 p-3 rounded border border-secondary border-opacity-10 text-start">
+                        <div class="row g-2 mb-2 pb-2 border-bottom border-secondary border-opacity-10">
+                            <div class="col-4 text-secondary small fw-bold">Full Name</div>
+                            <div class="col-8 text-white small fw-semibold">@AppState.CurrentUser.Name</div>
+                        </div>
+                        <div class="row g-2 mb-2 pb-2 border-bottom border-secondary border-opacity-10">
+                            <div class="col-4 text-secondary small fw-bold">Email Address</div>
+                            <div class="col-8 text-white small fw-semibold text-break">@AppState.CurrentUser.Email</div>
+                        </div>
+                        <div class="row g-2 mb-2 pb-2 border-bottom border-secondary border-opacity-10">
+                            <div class="col-4 text-secondary small fw-bold">Phone Number</div>
+                            <div class="col-8 text-white small fw-semibold">@AppState.CurrentUser.Phone</div>
+                        </div>
+                        <div class="row g-2 mb-2 pb-2 border-bottom border-secondary border-opacity-10">
+                            <div class="col-4 text-secondary small fw-bold">Physical Address</div>
+                            <div class="col-8 text-white small">@(string.IsNullOrWhiteSpace(AppState.CurrentUser.Address) ? "Not Provided" : AppState.CurrentUser.Address)</div>
+                        </div>
+                        <div class="row g-2 mb-2 pb-2 border-bottom border-secondary border-opacity-10">
+                            <div class="col-4 text-secondary small fw-bold">Family Details</div>
+                            <div class="col-8 text-white small">@AppState.CurrentUser.FamilyMembers</div>
+                        </div>
+                        <div class="row g-2 mb-2 pb-2 border-bottom border-secondary border-opacity-10">
+                            <div class="col-4 text-secondary small fw-bold">Discovery Source</div>
+                            <div class="col-8 text-white small">@AppState.CurrentUser.HowHeard</div>
+                        </div>
+                        <div class="row g-2">
+                            <div class="col-4 text-secondary small fw-bold">Ministries / Groups</div>
+                            <div class="col-8">
+                                <div class="d-flex flex-wrap gap-1">
+                                    @if (AppState.CurrentUser.Interests == null || AppState.CurrentUser.Interests.Count == 0)
+                                    {
+                                        <span class="text-muted small">None selected</span>
+                                    }
+                                    else
+                                    {
+                                        @foreach (var interest in AppState.CurrentUser.Interests)
+                                        {
+                                            <span class="badge bg-primary bg-opacity-20 text-primary" style="font-size: 0.65rem;">@interest</span>
+                                        }
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    @if (_showDeleteConfirm)
+                    {
+                        <!-- 2. DELETE ACCOUNT CONFIRMATION -->
+                        <div class="alert alert-danger p-3 mb-4 text-start" role="alert">
+                            <h6 class="fw-bold text-white mb-2"><i class="bi bi-exclamation-triangle-fill"></i> Unregister Account?</h6>
+                            <p class="small text-secondary mb-3">Are you sure you want to delete your profile? This will permanently remove your registration details, sermon notes, and volunteer registrations from our database.</p>
+                            <div class="d-flex gap-2">
+                                <button type="button" class="btn btn-sm btn-danger px-3" @onclick="ConfirmDeleteAccount">Yes, Delete Permanently</button>
+                                <button type="button" class="btn btn-sm btn-secondary px-3" @onclick="() => _showDeleteConfirm = false">Cancel</button>
+                            </div>
+                        </div>
+                    }
+
+                    <div class="d-flex gap-2 flex-wrap">
+                        <button type="button" class="btn btn-premium flex-grow-1 py-2 justify-content-center" @onclick="StartEditProfile">
+                            <i class="bi bi-pencil-square"></i> Edit Profile Info
+                        </button>
+                        <button type="button" class="btn btn-premium-secondary py-2 justify-content-center" @onclick="LogOutUser">
+                            <i class="bi bi-box-arrow-right"></i> Log Out
+                        </button>
+                        @if (!_showDeleteConfirm)
+                        {
+                            <button type="button" class="btn btn-outline-danger py-2 w-100 justify-content-center mt-2 border-opacity-20" @onclick="() => _showDeleteConfirm = true">
+                                <i class="bi bi-trash"></i> Unregister Account
+                            </button>
+                        }
+                    </div>
+                }
+                else
+                {
+                    <!-- 3. UPDATE PROFILE INFO FORM -->
+                    <div class="text-center mb-4">
+                        <i class="bi bi-person-gear text-primary fs-1 mb-2"></i>
+                        <h2 class="font-heading fw-bold text-white">Edit Profile Info</h2>
+                        <p class="text-muted small">Update your congregation contact details and ministry interests.</p>
+                    </div>
+
+                    @if (!string.IsNullOrEmpty(_errorMessage))
+                    {
+                        <div class="alert alert-danger mb-3 py-2 small" role="alert">@_errorMessage</div>
+                    }
+
+                    <form @onsubmit="SaveProfileChanges">
+                        <div class="row g-3 text-start">
+                            <div class="col-sm-6">
+                                <label class="form-label text-secondary small">Full Name</label>
+                                <input type="text" class="form-control form-glass" required @bind="_editName" />
+                            </div>
+                            <div class="col-sm-6">
+                                <label class="form-label text-secondary small">Email Address (Readonly)</label>
+                                <input type="email" class="form-control form-glass text-muted" readonly disabled @bind="_editEmail" />
+                            </div>
+                            <div class="col-sm-6">
+                                <label class="form-label text-secondary small">Phone Number</label>
+                                <input type="tel" class="form-control form-glass" required @bind="_editPhone" />
+                            </div>
+                            <div class="col-sm-6">
+                                <label class="form-label text-secondary small">Family Details</label>
+                                <input type="text" class="form-control form-glass" @bind="_editFamily" />
+                            </div>
+                            <div class="col-sm-6">
+                                <label class="form-label text-secondary small">New Password (Optional)</label>
+                                <input type="password" class="form-control form-glass" @bind="_editPassword" placeholder="••••••••" />
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label text-secondary small">Physical Address</label>
+                                <input type="text" class="form-control form-glass" @bind="_editAddress" />
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label text-secondary small">How did you hear about us?</label>
+                                <select class="form-select form-glass" required @bind="_editReferral">
+                                    <option value="Friend or Family">Friend or Family</option>
+                                    <option value="Social Media">Social Media</option>
+                                    <option value="Search Engine">Search Engine / Website</option>
+                                    <option value="Community Flyer">Community Flyer</option>
+                                    <option value="Just Walking By">Just Walking By</option>
+                                    <option value="Other">Other</option>
+                                </select>
+                            </div>
+                            <div class="col-12 my-3">
+                                <label class="form-label text-secondary small d-block mb-2">My Selected Ministries</label>
+                                <div class="d-flex flex-wrap gap-2 justify-content-start">
+                                    @foreach (var interest in _availableInterests)
+                                    {
+                                        <button type="button" class="btn btn-sm @(_editSelectedInterests.Contains(interest) ? "btn-premium" : "btn-premium-secondary")" @onclick="() => ToggleEditInterest(interest)">
+                                            @if (_editSelectedInterests.Contains(interest))
+                                            {
+                                                <i class="bi bi-check2-circle"></i>
+                                            }
+                                            @interest
+                                        </button>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row g-2 mt-4">
+                            <div class="col-6">
+                                <button type="submit" class="btn btn-premium w-100 justify-content-center py-2">
+                                    <i class="bi bi-save"></i> Save Changes
+                                </button>
+                            </div>
+                            <div class="col-6">
+                                <button type="button" class="btn btn-premium-secondary w-100 justify-content-center py-2" @onclick="() => _isEditingProfile = false">
+                                    Cancel
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                }
+            }
+            else
+            {
+                <div class="text-center mb-4">
+                    <i class="bi bi-person-circle text-primary fs-1 mb-2"></i>
+                    <h2 class="font-heading fw-bold text-white">@(_isLogin ? "Sign In to Fellowship" : "Join Our Congregation")</h2>
+                    <p class="text-muted small">Access sermons, volunteer registries, prayer requests, and community news.</p>
+                </div>
+
+                @if (_isResetPasswordMode)
+                {
+                    <!-- RESET PASSWORD FORM -->
+                    <form @onsubmit="HandleResetPassword">
+                        @if (!string.IsNullOrEmpty(_errorMessage))
+                        {
+                            <div class="alert alert-danger mb-3 py-2 small" role="alert">@_errorMessage</div>
+                        }
+                        @if (_resetSuccess)
+                        {
+                            <div class="alert alert-success mb-3 py-2 small" role="alert">
+                                Password reset successfully! Redirecting to sign in...
+                            </div>
+                        }
+
+                        <div class="mb-3 text-start">
+                            <label class="form-label text-secondary small">Email Address</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-dark border-secondary border-opacity-20 text-muted"><i class="bi bi-envelope"></i></span>
+                                <input type="email" class="form-control form-glass" required @bind="_resetEmail" placeholder="name@example.com" />
+                            </div>
+                        </div>
+
+                        <div class="mb-3 text-start">
+                            <label class="form-label text-secondary small">New Password</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-dark border-secondary border-opacity-20 text-muted"><i class="bi bi-key"></i></span>
+                                <input type="password" class="form-control form-glass" required @bind="_resetPassword" placeholder="••••••••" />
+                            </div>
+                        </div>
+
+                        <div class="mb-3 text-start">
+                            <label class="form-label text-secondary small">Confirm New Password</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-dark border-secondary border-opacity-20 text-muted"><i class="bi bi-shield-check"></i></span>
+                                <input type="password" class="form-control form-glass" required @bind="_resetConfirmPassword" placeholder="••••••••" />
+                            </div>
+                        </div>
+
+                        <button type="submit" class="btn btn-premium w-100 py-2 mt-2">
+                            <i class="bi bi-arrow-right-circle"></i> Save New Password
+                        </button>
+                        
+                        <div class="text-center mt-4 pt-3 border-top border-secondary border-opacity-20">
+                            <button type="button" class="btn btn-link p-0 small text-accent fw-bold border-0 bg-transparent" @onclick="DisableResetPasswordMode">
+                                Back to Sign In
+                            </button>
+                        </div>
+                    </form>
+                }
+                else if (_isLogin)
+                {
+                    <!-- LOGIN FORM -->
+                    <form @onsubmit="HandleLogin">
+                        @if (!string.IsNullOrEmpty(_errorMessage))
+                        {
+                            <div class="alert alert-danger mb-3 py-2 small" role="alert">@_errorMessage</div>
+                        }
+
+                        <div class="mb-3 text-start">
+                            <label class="form-label text-secondary small">Email Address</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-dark border-secondary border-opacity-20 text-muted"><i class="bi bi-envelope"></i></span>
+                                <input type="email" class="form-control form-glass" required @bind="_email" placeholder="name@example.com" />
+                            </div>
+                        </div>
+
+                        <div class="mb-3 text-start">
+                            <label class="form-label text-secondary small">Password</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-dark border-secondary border-opacity-20 text-muted"><i class="bi bi-key"></i></span>
+                                <input type="password" class="form-control form-glass" required @bind="_password" placeholder="••••••••" />
+                            </div>
+                        </div>
+
+                        <div class="mb-4 d-flex justify-content-between align-items-center">
+                            <div class="form-check">
+                                <input type="checkbox" class="form-check-input darker-border-checkbox" id="rememberMe" />
+                                <label class="form-check-label text-secondary small" for="rememberMe">Remember me</label>
+                            </div>
+                            <div class="d-flex gap-2">
+                                <button type="button" class="btn btn-link p-0 small text-accent fw-bold border-0 bg-transparent" @onclick="EnableResetPasswordMode">
+                                    Reset Password?
+                                </button>
+                                <span class="text-muted small">|</span>
+                                <button type="button" class="btn btn-link p-0 small text-primary border-0 bg-transparent" @onclick="SimulateMagicLink">
+                                    Magic Link?
+                                </button>
+                            </div>
+                        </div>
+
+                        <button type="submit" class="btn btn-premium w-100 py-2">
+                            <i class="bi bi-box-arrow-in-right"></i> Authenticate
+                        </button>
+                    </form>
+
+                    <div class="text-center mt-4 pt-3 border-top border-secondary border-opacity-20">
+                        <span class="text-muted small">New to Christ Miracle Church?</span>
+                        <button type="button" class="btn btn-link p-0 ms-2 small text-accent fw-bold border-0 bg-transparent" @onclick="ToggleAuthMode">
+                            Register Here
+                        </button>
+                    </div>
+                }
+                else
+                {
+                    <!-- REGISTER FORM -->
+                    <form @onsubmit="SubmitRegistration">
+                        @if (!string.IsNullOrEmpty(_errorMessage))
+                        {
+                            <div class="alert alert-danger mb-3 py-2 small" role="alert">@_errorMessage</div>
+                        }
+
+                        <div class="row g-3 text-start">
+                            <div class="col-sm-6">
+                                <label class="form-label text-secondary small">Full Name</label>
+                                <input type="text" class="form-control form-glass" required @bind="_regName" placeholder="John Doe" />
+                            </div>
+                            <div class="col-sm-6">
+                                <label class="form-label text-secondary small">Email Address</label>
+                                <input type="email" class="form-control form-glass" required @bind="_regEmail" placeholder="john@example.com" />
+                            </div>
+                            <div class="col-sm-6">
+                                <label class="form-label text-secondary small">Password</label>
+                                <input type="password" class="form-control form-glass" required @bind="_regPassword" placeholder="••••••••" />
+                            </div>
+                            <div class="col-sm-6">
+                                <label class="form-label text-secondary small">Phone Number</label>
+                                <input type="tel" class="form-control form-glass" required @bind="_regPhone" placeholder="555-0122" />
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label text-secondary small">Family Members (Count / Names)</label>
+                                <input type="text" class="form-control form-glass" @bind="_regFamily" placeholder="e.g. Spouse, 2 kids (or None)" />
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label text-secondary small">Physical Address (Optional)</label>
+                                <input type="text" class="form-control form-glass" @bind="_regAddress" placeholder="123 Main St, City" />
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label text-secondary small">How did you hear about us?</label>
+                                <select class="form-select form-glass" required @bind="_regReferral">
+                                    <option value="">-- Select Option --</option>
+                                    <option value="Friend or Family">Friend or Family</option>
+                                    <option value="Social Media">Social Media</option>
+                                    <option value="Search Engine">Search Engine / Website</option>
+                                    <option value="Community Flyer">Community Flyer</option>
+                                    <option value="Just Walking By">Just Walking By</option>
+                                    <option value="Other">Other</option>
+                                </select>
+                            </div>
+
+                            <div class="col-12 my-2">
+                                <label class="form-label text-secondary small d-block mb-2">Select Ministry & Volunteer Groups (Optional)</label>
+                                <div class="d-flex flex-wrap gap-2 justify-content-start">
+                                    @foreach (var interest in _availableInterests)
+                                    {
+                                        <button type="button" class="btn btn-sm @(_selectedInterests.Contains(interest) ? "btn-premium" : "btn-premium-secondary")" @onclick="() => ToggleInterest(interest)">
+                                            @if (_selectedInterests.Contains(interest))
+                                            {
+                                                <i class="bi bi-check2-circle"></i>
+                                            }
+                                            @interest
+                                        </button>
+                                    }
+                                </div>
+                            </div>
+
+                            <div class="col-12 my-3">
+                                <div class="form-check">
+                                    <input type="checkbox" class="form-check-input darker-border-checkbox" id="privacyConsent" required @bind="_regConsent" />
+                                    <label class="form-check-label text-secondary small" for="privacyConsent">
+                                        I agree to the <span class="text-white fw-bold">Privacy Policy</span> and consent to GDPR compliance rules for storing my profile data.
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <button type="submit" class="btn btn-premium w-100 py-2 mt-2">
+                            <i class="bi bi-person-plus"></i> Submit & Register
+                        </button>
+                    </form>
+
+                    <div class="text-center mt-4 pt-3 border-top border-secondary border-opacity-20">
+                        <span class="text-muted small">Already registered?</span>
+                        <button type="button" class="btn btn-link p-0 ms-2 small text-accent fw-bold border-0 bg-transparent" @onclick="ToggleAuthMode">
+                            Sign In Instead
+                        </button>
+                    </div>
+                }
+            }
+
+        </div>
+    </div>
+</div>
+
